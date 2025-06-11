@@ -649,7 +649,7 @@ async function showQuestion() {
 }
 
 function renderQuestionContentAndButtonStates() {
-  const currentQuestion = gameState.questions[gameState.turnNumber];
+  const currentQuestion = gameState.questions[gameState.currentQuestionIndex];
 
   document.getElementById("questionNumber").textContent = `Vraag ${gameState.currentQuestionIndex + 1}`;
   document.getElementById("questionContent").textContent = currentQuestion.content;
@@ -731,13 +731,16 @@ async function submitAnswer(answer) {
 
 // Next turn
 async function nextTurn() {
+  // Alleen de host verhoogt de vraagindex!
+  if (gameState.players[gameState.currentPlayerIndex]?.isHost) {
+    gameState.currentQuestionIndex++;
+  }
+
   // Volgende speler
   gameState.currentPlayerIndex = (gameState.currentPlayerIndex + 1) % gameState.players.length;
-  // Volgende vraag (altijd +1 per beurt)
-  gameState.turnNumber++;
 
   // Stop het spel als alle vragen geweest zijn
-  if (gameState.turnNumber >= gameState.questions.length) {
+  if (gameState.currentQuestionIndex >= gameState.questions.length) {
     await endGame();
     return;
   }
