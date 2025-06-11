@@ -728,8 +728,8 @@ function startListeningForUpdates() {
         gameStarted: data.gameStarted || false,
       });
 
-      // Update UI based on active screen
-      if (data.activeScreen && data.activeScreen !== gameState.activeScreen) {
+      // Always update the screen for all players
+      if (data.activeScreen) {
         gameState.activeScreen = data.activeScreen;
         showScreen(data.activeScreen);
       }
