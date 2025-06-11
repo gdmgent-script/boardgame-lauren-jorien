@@ -1,156 +1,178 @@
 <!DOCTYPE html>
 <html lang="nl">
 <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Truth Seekers - CTRL+P</title>
     <link rel="stylesheet" href="updated_styles.css">
-
-    <!-- A-Frame and AR.js -->
+    <!-- A-Frame and AR.js libraries -->
     <script src="https://aframe.io/releases/1.2.0/aframe.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/ar.js@1.7.2/aframe/build/aframe-ar.min.js"></script>
-
     <!-- Firebase SDK -->
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
-
-    <style>
-        /* Extra styles voor AR view */
-        #arViewContainer {
-            display: none;
-            position: fixed;
-            top: 0; left: 0;
-            width: 100%; height: 100%;
-            background: rgba(0, 0, 0, 0.85);
-            z-index: 9999;
-        }
-        #closeScanner {
-            position: absolute;
-            top: 10px; right: 10px;
-            padding: 10px;
-            background: red;
-            color: white;
-            border: none;
-            cursor: pointer;
-            z-index: 10000;
-        }
-    </style>
 </head>
-
 <body>
-<div class="container">
-
-    <!-- Start Screen -->
-    <div id="startScreen" class="screen active">
-        <div class="logo-container">
-            <img src="logo.png" alt="Truth Seekers Logo" class="logo">
-        </div>
-        <h1>CTRL+P</h1>
-        <p>Ontmasker de Fakemaker!</p>
-        <div class="button-container">
-            <button id="hostGameBtn" class="primary-button">Spel Hosten</button>
-            <button id="goToJoinBtn" class="secondary-button">Deelnemen</button>
-        </div>
-    </div>
-
-    <!-- (alle andere schermen blijven identiek) -->
-
-    <!-- Game Screen (met AR button) -->
-    <div id="gameScreen" class="screen">
-        <div class="game-header">
-            <div class="player-info">
-                <p>Huidige Speler: <span id="currentPlayerDisplay" class="highlight"></span></p>
+    <div class="container">
+        <!-- Start Screen -->
+        <div id="startScreen" class="screen active">
+            <div class="logo-container">
+                <img src="logo.png" alt="Truth Seekers Logo" class="logo">
             </div>
-            <div id="answerInfo" class="answer-info hidden">
-                <p>Juiste Antwoord: <span id="correctAnswer" class="highlight"></span></p>
+            <h1>CTRL+P</h1>
+            <p>Ontmasker de Fakemaker!</p>
+            <div class="button-container">
+                <button id="hostGameBtn" class="primary-button">Spel Hosten</button>
+                <button id="goToJoinBtn" class="secondary-button">Deelnemen</button>
             </div>
         </div>
 
-        <div id="yourTurnInfo" class="your-turn-info">
-            <p>Het is jouw beurt!</p>
-            <div style="display: flex; justify-content: center; align-items: center; gap: 10px;">
-                <button id="showQuestionBtn" class="primary-button">Toon Vraag</button>
-                <button id="scanHiroGameBtn" class="secondary-button">Scan Hiro</button>
+        <!-- Host Setup Screen -->
+        <div id="hostSetupScreen" class="screen">
+            <h1>Maak een Spel</h1>
+            <p>Voer je naam in om een nieuw spel te hosten</p>
+            <div class="form-group">
+                <input type="text" id="hostNameInput" placeholder="Jouw Naam" class="input-field">
+                <button id="createGameBtn" class="primary-button">Maak Spel</button>
+                <button id="backFromHostBtn" class="secondary-button">Terug</button>
             </div>
         </div>
 
-        <div id="notYourTurnInfo" class="not-your-turn-info hidden">
-            <p>Wacht op je beurt...</p>
-            <p>Huidige speler: <span id="currentPlayerName" class="highlight"></span></p>
+        <!-- Join Game Screen -->
+        <div id="joinGameScreen" class="screen">
+            <h1>Deelnemen aan Spel</h1>
+            <p>Voer je naam en de spelcode in</p>
+            <div class="form-group">
+                <input type="text" id="playerNameInput" placeholder="Jouw Naam" class="input-field">
+                <input type="text" id="gameCodeInput" placeholder="Spelcode" class="input-field" maxlength="5">
+                <button id="submitJoinBtn" class="primary-button">Deelnemen</button>
+                <button id="backFromJoinBtn" class="secondary-button">Terug</button>
+                <p id="joinErrorMessage" class="error-message hidden"></p>
+            </div>
         </div>
 
-        <div class="connection-status">
-            <span id="connectionIndicator" class="connection-indicator"></span>
-            <span id="connectionStatus">Verbonden</span>
+        <!-- Role Code Screen -->
+        <div id="roleCodeScreen" class="screen">
+            <h1>Voer Rolcode In</h1>
+            <p>Voer de geheime rolcode in die je hebt gekregen</p>
+            <div class="form-group">
+                <input type="text" id="roleCodeInput" placeholder="Rolcode" class="input-field" maxlength="4">
+                <button id="submitRoleBtn" class="primary-button">Bevestigen</button>
+                <p id="roleErrorMessage" class="error-message hidden"></p>
+            </div>
         </div>
+
+        <!-- Role Confirmation Screen -->
+        <div id="roleConfirmationScreen" class="screen">
+            <h1>Jouw Rol</h1>
+            <div class="role-display">
+                <p>Je bent een <span id="playerRoleDisplay" class="highlight"></span></p>
+                <p id="roleInstructions"></p>
+            </div>
+            <button id="continueAfterRoleBtn" class="primary-button">Doorgaan</button>
+        </div>
+
+        <!-- Host Game Screen -->
+        <div id="hostGameScreen" class="screen">
+            <h1>Spel Aangemaakt!</h1>
+            <p>Deel deze spelcode met andere spelers:</p>
+            <div class="game-code">
+                <span id="gameCodeDisplay"></span>
+            </div>
+            <button id="copyCodeBtn" class="secondary-button">Code Kopiëren</button>
+            <button id="shareGameBtn" class="secondary-button">Spellink Delen</button>
+            
+            <p id="shareSuccessMessage" class="success-message hidden"></p>
+            
+            <h2>Spelers:</h2>
+            <div id="hostPlayerList" class="player-list"></div>
+            
+            <button id="startGameBtn" class="primary-button" disabled>Spel Starten</button>
+        </div>
+
+        <!-- Game Screen -->
+        <div id="gameScreen" class="screen">
+            <div class="game-header">
+                <div class="player-info">
+                    <p>Huidige Speler: <span id="currentPlayerDisplay" class="highlight"></span></p>
+                </div>
+                <div id="answerInfo" class="answer-info hidden">
+                    <p>Juiste Antwoord: <span id="correctAnswer" class="highlight"></span></p>
+                </div>
+            </div>
+            
+            <div id="yourTurnInfo" class="your-turn-info">
+                <p>Het is jouw beurt!</p>
+                <div style="display: flex; justify-content: center; align-items: center; gap: 10px;">
+                    <button id="showQuestionBtn" class="primary-button">Toon Vraag</button>
+                    <button id="scanHiroGameBtn" class="secondary-button">Scan Hiro</button>
+                </div>
+            </div>
+            
+            <div id="notYourTurnInfo" class="not-your-turn-info hidden">
+                <p>Wacht op je beurt...</p>
+                <p>Huidige speler: <span id="currentPlayerName" class="highlight"></span></p>
+            </div>
+            
+            <div class="connection-status">
+                <span id="connectionIndicator" class="connection-indicator"></span>
+                <span id="connectionStatus">Verbonden</span>
+            </div>
+        </div>
+
+        <!-- Question Screen -->
+        <div id="questionScreen" class="screen">
+            <h2 id="questionNumber">Vraag 1</h2>
+            <p id="questionContent" class="question-content"></p>
+            
+            <div id="imageContainer" class="media-container hidden">
+                <img id="questionImage" src="" alt="Vraag afbeelding" style="max-width:100%;max-height:300px;">
+            </div>
+            
+            <div id="videoContainer" class="media-container hidden">
+                <video id="questionVideo" width="400" controls>
+                    <source id="videoSource" src="" type="video/mp4">
+                    Je browser ondersteunt geen video.
+                </video>
+            </div>
+            
+            <div id="externalActionContainer" class="media-container hidden">
+                <div id="externalActionPrompt"></div>
+            </div>
+
+            <!-- Answer buttons (make sure these exist and are referenced in JS) -->
+            <div id="trueFalseButtons">
+                <button id="trueBtn">Echt</button>
+                <button id="falseBtn">Nep</button>
+            </div>
+            <div id="multipleChoiceButtons" class="hidden">
+                <button id="option0"></button>
+                <button id="option1"></button>
+                <button id="option2"></button>
+                <button id="option3"></button>
+            </div>
+        </div>
+
+        <!-- Result Screen -->
+        <div id="resultScreen" class="screen">
+            <h1 id="resultTitle">Resultaat</h1>
+            <p id="resultMessage"></p>
+            <p>Jouw stappen: <span id="stepsDisplayResult" class="highlight">0</span></p>
+            <p id="stepChange" class="highlight"></p>
+            <button id="nextTurnBtn" class="primary-button">Volgende Beurt</button>
+            <button id="newGameBtn" class="secondary-button">Nieuw Spel</button>
+        </div>
+
+        <!-- AR View Container (Overlay) -->
+        <div id="arViewContainer" class="ar-view-overlay">
+            <!-- A-Frame scene will be dynamically inserted here by script.js -->
+        </div>
+
+        <!-- Global AR Button - Initially hidden -->
+        <button id="globalScanHiroBtn" class="global-ar-button hidden">scan Hiro</button>
     </div>
 
-    <!-- AR Container -->
-    <div id="arViewContainer" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 9999; background: rgba(0,0,0,0.8);">
-    <button id="closeScanner" style="position: absolute; top: 10px; right: 10px; z-index: 10000; background: red; color: white; padding: 10px; border: none;">Sluiten</button>
-
-    <a-scene
-        embedded
-        arjs="sourceType: webcam;"
-        vr-mode-ui="enabled: false"
-        renderer="logarithmicDepthBuffer: true;"
-        id="arScene"
-    >
-        <a-marker preset="hiro">
-            <a-box position="0 0.5 0" material="color: blue;"></a-box>
-        </a-marker>
-        <a-entity camera></a-entity>
-    </a-scene>
-    </div>
-
-
-    <!-- Globale AR-knop indien nodig -->
-    <button id="globalScanHiroBtn" class="global-ar-button hidden">scan Hiro</button>
-
-</div>
-
-<!-- Scripts -->
-<script src="complete_fixed_script.js"></script>
-
-<script>
-    function openARScanner() {
-        const container = document.getElementById('arViewContainer');
-        const sceneContainer = document.getElementById('arSceneContainer');
-
-        // Leegmaken voor hergebruik
-        sceneContainer.innerHTML = '';
-
-        const scene = document.createElement('a-scene');
-        scene.setAttribute('embedded', '');
-        scene.setAttribute('arjs', '');
-
-        const marker = document.createElement('a-marker');
-        marker.setAttribute('preset', 'hiro');
-
-        const box = document.createElement('a-box');
-        box.setAttribute('position', '0 0.5 0');
-        box.setAttribute('material', 'color: blue');
-
-        marker.appendChild(box);
-        scene.appendChild(marker);
-
-        const camera = document.createElement('a-entity');
-        camera.setAttribute('camera', '');
-        scene.appendChild(camera);
-
-        sceneContainer.appendChild(scene);
-
-        container.style.display = 'block';
-    }
-
-    function closeARScanner() {
-        document.getElementById('arViewContainer').style.display = 'none';
-        document.getElementById('arSceneContainer').innerHTML = '';
-    }
-
-    document.getElementById('scanHiroGameBtn')?.addEventListener('click', openARScanner);
-    document.getElementById('globalScanHiroBtn')?.addEventListener('click', openARScanner);
-    document.getElementById('closeScanner')?.addEventListener('click', closeARScanner);
-</script>
+    <script src="complete_fixed_script.js"></script>
 </body>
 </html>
+
