@@ -105,6 +105,7 @@ const gameState = {
   playerRole: "",
   activeScreen: "startScreen", // To control which screen is globally active
   lastResult: { title: "", message: "" }, // To store result message for all players
+  turnNumber: 0, // Nieuw: telt het totaal aantal beurten
 };
 
 // Role codes
@@ -623,7 +624,7 @@ function updateGameDisplay() {
   // Show answer if player is Fakemaker and not unmasked
   if (gameState.playerRole === "Fakemaker" && !gameState.fakemakerUnmasked) {
     document.getElementById("answerInfo").classList.remove("hidden");
-    const currentQuestion = gameState.questions[gameState.currentQuestionIndex];
+    const currentQuestion = gameState.questions[gameState.turnNumber];
     document.getElementById("correctAnswer").textContent = currentQuestion.answer ? "Echt" : "Fake";
   } else {
     document.getElementById("answerInfo").classList.add("hidden");
@@ -648,7 +649,7 @@ async function showQuestion() {
 }
 
 function renderQuestionContentAndButtonStates() {
-  const currentQuestion = gameState.questions[gameState.currentQuestionIndex];
+  const currentQuestion = gameState.questions[gameState.turnNumber];
 
   document.getElementById("questionNumber").textContent = `Vraag ${gameState.currentQuestionIndex + 1}`;
   document.getElementById("questionContent").textContent = currentQuestion.content;
@@ -691,7 +692,7 @@ function renderQuestionContentAndButtonStates() {
 
 // Submit answer
 async function submitAnswer(answer) {
-  const currentQuestion = gameState.questions[gameState.currentQuestionIndex];
+  const currentQuestion = gameState.questions[gameState.turnNumber];
   const isCorrect = answer === currentQuestion.answer;
 
   let resultMessage = "";
@@ -730,19 +731,19 @@ async function submitAnswer(answer) {
 
 // Next turn
 async function nextTurn() {
-  // Na het beantwoorden van een vraag, ga naar de volgende speler én de volgende vraag
+  // Volgende speler
   gameState.currentPlayerIndex = (gameState.currentPlayerIndex + 1) % gameState.players.length;
-  gameState.currentQuestionIndex++;
+  // Volgende vraag (altijd +1 per beurt)
+  gameState.turnNumber++;
 
   // Stop het spel als alle vragen geweest zijn
-  if (gameState.currentQuestionIndex >= gameState.questions.length) {
+  if (gameState.turnNumber >= gameState.questions.length) {
     await endGame();
     return;
   }
 
   gameState.activeScreen = "gameScreen";
 
-  // Save to Firebase
   try {
     await saveGameToFirebase();
   } catch (error) {
