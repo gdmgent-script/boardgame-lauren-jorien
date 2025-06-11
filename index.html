@@ -109,11 +109,6 @@
                 </div>
             </div>
             
-            <div id="notYourTurnInfo" class="not-your-turn-info hidden">
-                <p>Wacht op je beurt...</p>
-                <p>Huidige speler: <span id="currentPlayerName" class="highlight"></span></p>
-            </div>
-            
             <div class="connection-status">
                 <span id="connectionIndicator" class="connection-indicator"></span>
                 <span id="connectionStatus">Verbonden</span>
@@ -126,30 +121,32 @@
             <p id="questionContent" class="question-content"></p>
             
             <div id="imageContainer" class="media-container hidden">
-                <img id="questionImage" src="" alt="Vraag afbeelding" style="max-width:100%;max-height:300px;">
+                <img id="questionImage" src="#" alt="Vraag Afbeelding">
             </div>
             
             <div id="videoContainer" class="media-container hidden">
-                <video id="questionVideo" width="400" controls>
-                    <source id="videoSource" src="" type="video/mp4">
-                    Je browser ondersteunt geen video.
+                <video id="questionVideo" controls>
+                    <source id="videoSource" src="#" type="video/mp4">
+                    Je browser ondersteunt geen video's.
                 </video>
             </div>
             
             <div id="externalActionContainer" class="media-container hidden">
-                <div id="externalActionPrompt"></div>
+                <p id="externalActionPrompt"></p>
             </div>
-
-            <!-- Answer buttons (make sure these exist and are referenced in JS) -->
-            <div id="trueFalseButtons">
-                <button id="trueBtn">Echt</button>
-                <button id="falseBtn">Nep</button>
+            
+            <!-- True/False buttons for real/fake questions -->
+            <div id="trueFalseButtons" class="answer-buttons">
+                <button id="trueBtn" class="answer-button true">Echt</button>
+                <button id="falseBtn" class="answer-button false">Nep</button>
             </div>
-            <div id="multipleChoiceButtons" class="hidden">
-                <button id="option0"></button>
-                <button id="option1"></button>
-                <button id="option2"></button>
-                <button id="option3"></button>
+            
+            <!-- Multiple choice buttons for multiple choice questions -->
+            <div id="multipleChoiceButtons" class="multiple-choice-buttons hidden">
+                <button id="option0" class="answer-button option">1</button>
+                <button id="option1" class="answer-button option">2</button>
+                <button id="option2" class="answer-button option">3</button>
+                <button id="option3" class="answer-button option">4</button>
             </div>
         </div>
 
