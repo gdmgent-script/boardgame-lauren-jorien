@@ -4,13 +4,13 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Truth Seekers - CTRL+P</title>
-    <link rel="stylesheet" href="modified_styles.css">
+    <link rel="stylesheet" href="updated_styles.css">
+    <!-- A-Frame and AR.js libraries -->
+    <script src="https://aframe.io/releases/1.2.0/aframe.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/ar.js@1.7.2/aframe/build/aframe-ar.min.js"></script>
     <!-- Firebase SDK -->
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
-    <!-- A-Frame and AR.js for AR functionality -->
-    <script src="https://aframe.io/releases/1.2.0/aframe.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/ar.js@1.7.2/aframe/build/aframe-ar.min.js"></script>
 </head>
 <body>
     <div class="container">
@@ -24,7 +24,6 @@
             <div class="button-container">
                 <button id="hostGameBtn" class="primary-button">Spel Hosten</button>
                 <button id="goToJoinBtn" class="secondary-button">Deelnemen</button>
-                <button id="goToARBtn" class="secondary-button">Start AR Ervaring</button>
             </div>
         </div>
 
@@ -35,7 +34,7 @@
             <div class="form-group">
                 <input type="text" id="hostNameInput" placeholder="Jouw Naam" class="input-field">
                 <button id="createGameBtn" class="primary-button">Maak Spel</button>
-                <button id="backFromHostBtn" class="secondary-button">Terug</button>
+                <button id="backFromHostBtn" class="secondary-button" onclick="showScreen('startScreen')">Terug</button>
             </div>
         </div>
 
@@ -47,7 +46,7 @@
                 <input type="text" id="playerNameInput" placeholder="Jouw Naam" class="input-field">
                 <input type="text" id="gameCodeInput" placeholder="Spelcode" class="input-field" maxlength="5">
                 <button id="submitJoinBtn" class="primary-button">Deelnemen</button>
-                <button id="backFromJoinBtn" class="secondary-button">Terug</button>
+                <button id="backFromJoinBtn" class="secondary-button" onclick="showScreen('startScreen')">Terug</button>
                 <p id="joinErrorMessage" class="error-message hidden"></p>
             </div>
         </div>
@@ -80,7 +79,7 @@
             <div class="game-code">
                 <span id="gameCodeDisplay"></span>
             </div>
-            <button id="copyCodeBtn" class="secondary-button" onclick="copyToClipboard(document.getElementById(\'gameCodeDisplay\').textContent)">Code Kopiëren</button>
+            <button id="copyCodeBtn" class="secondary-button" onclick="copyToClipboard(document.getElementById('gameCodeDisplay').textContent)">Code Kopiëren</button>
             <button id="shareGameBtn" class="secondary-button">Spellink Delen</button>
             
             <p id="shareSuccessMessage" class="success-message hidden"></p>
@@ -104,7 +103,7 @@
                 </div>
             </div>
             
-            <div id="yourTurnInfo" class="your-turn-info">
+            <div id="yourTurnInfo" class="your-turn-info hidden">
                 <p>Het is jouw beurt!</p>
                 <button id="showQuestionBtn" class="primary-button">Toon Vraag</button>
             </div>
@@ -121,13 +120,13 @@
             <p id="questionContent" class="question-content"></p>
             
             <div id="imageContainer" class="media-container hidden">
-                <img id="questionImage" src="" alt="Vraag Afbeelding">
+                <img id="questionImage" src="#" alt="Vraag Afbeelding">
             </div>
             
             <div id="videoContainer" class="media-container hidden">
                 <video id="questionVideo" controls>
-                    <source id="videoSource" src="" type="video/mp4">
-                    Je browser ondersteunt geen video\"s.
+                    <source id="videoSource" src="#" type="video/mp4">
+                    Je browser ondersteunt geen video's.
                 </video>
             </div>
             
@@ -135,8 +134,17 @@
                 <p id="externalActionPrompt"></p>
             </div>
             
+            <!-- Gameplay buttons with scan Hiro option -->
+            <div id="gameplayButtons" class="gameplay-buttons">
+                <div class="main-actions">
+                    <button id="showQuestionBtn" class="primary-button">Toon Vraag</button>
+                    <button id="scanHiroBtn" class="scan-hiro-button">scan Hiro</button>
+                </div>
+                <button id="connectBtn" class="connect-button">Verbonden</button>
+            </div>
+            
             <!-- True/False buttons for real/fake questions -->
-            <div id="trueFalseButtons" class="answer-buttons">
+            <div id="trueFalseButtons" class="answer-buttons hidden">
                 <button id="trueBtn" class="answer-button true">Echt</button>
                 <button id="falseBtn" class="answer-button false">Fake</button>
             </div>
@@ -159,34 +167,39 @@
             <button id="nextTurnBtn" class="primary-button">Volgende Beurt</button>
             <button id="newGameBtn" class="secondary-button">Nieuw Spel</button>
         </div>
-
-        <!-- AR Screen -->
-        <div id="arScreen" class="screen">
-            <h1>AR Ervaring</h1>
-            <p>Druk op de camera knop om de AR camera te starten</p>
-            
-            <!-- Camera button -->
-            <div class="camera-controls">
-                <button id="startCameraBtn" class="primary-button">Start Camera</button>
-                <button id="stopCameraBtn" class="secondary-button hidden">Stop Camera</button>
+        
+        <!-- Camera View Container (Overlay) -->
+        <div id="cameraViewContainer" class="camera-view-overlay hidden">
+            <div class="camera-view">
+                <div class="camera-header">
+                    <h3>Camera Scan</h3>
+                    <button id="closeCameraBtn" class="close-camera-button">&times;</button>
+                </div>
+                <div class="camera-display">
+                    <!-- White rectangle representing camera view -->
+                    <div class="camera-screen"></div>
+                </div>
+                <div class="camera-answer-buttons">
+                    <button id="cameraFakeBtn1" class="answer-button fake">Fake</button>
+                    <button id="cameraFakeBtn2" class="answer-button fake">Fake</button>
+                </div>
             </div>
-            
-            <!-- Small camera view container -->
-            <div id="cameraContainer" class="camera-container hidden">
-                <a-scene id="arScene" embedded arjs="sourceType: webcam; debugUIEnabled: false;" 
-                         style="width: 300px; height: 200px;">
-                    <a-marker preset="hiro">
-                        <a-entity id="dynamicObject" position="0 0 0"></a-entity>
-                    </a-marker>
-                    <a-entity camera></a-entity>
-                </a-scene>
-            </div>
-            
-            <button id="backFromARBtn" class="secondary-button">Terug</button>
         </div>
+        
+        <!-- AR View Container (Overlay) -->
+        <div id="arViewContainer" class="ar-view-overlay">
+            <button id="closeArViewBtn" class="ar-close-button">&times;</button>
+            <!-- A-Frame scene will be dynamically inserted here by script.js -->
+            <div class="ar-overlay-buttons">
+                <button id="arTrueBtn" class="answer-button true">Echt</button>
+                <button id="arFalseBtn" class="answer-button false">Nep</button>
+            </div>
+        </div>
+
+        <!-- Global AR Button - Initially hidden -->
+        <button id="globalScanHiroBtn" class="global-ar-button hidden">scan Hiro</button>
     </div>
 
-    <script src="modified_script.js"></script>
+    <script src="script.js"></script>
 </body>
 </html>
-
