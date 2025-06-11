@@ -218,6 +218,30 @@ function showScreen(screenId) {
     screen.classList.remove("active");
   });
   document.getElementById(screenId).classList.add("active");
+
+  // Escape-knop alleen tonen tijdens het spel, niet op startScreen
+  const escapeBtn = document.getElementById("escapeBtn");
+  if (
+      screenId === "gameScreen" ||
+      screenId === "questionScreen" ||
+      screenId === "resultScreen"
+  ) {
+      escapeBtn.style.display = "block";
+  } else {
+      escapeBtn.style.display = "none";
+  }
+
+  // Ontmaskerd-knop alleen tonen voor Fakemaker tijdens het spel
+  const unmaskBtn = document.getElementById("unmaskBtn");
+  if (
+      (screenId === "gameScreen" || screenId === "questionScreen" || screenId === "resultScreen") &&
+      gameState.playerRole === "Fakemaker" &&
+      !gameState.fakemakerUnmasked
+  ) {
+      unmaskBtn.style.display = "block";
+  } else {
+      unmaskBtn.style.display = "none";
+  }
 }
 
 // Generate a random game code
@@ -1159,4 +1183,12 @@ document.getElementById("escapeBtn").addEventListener("click", async function() 
 
     // Stuur ontsnapte speler terug naar start
     showScreen("startScreen");
+});
+
+// Zet Fakemaker op 'unmasked'
+document.getElementById("unmaskBtn").addEventListener("click", async function() {
+    gameState.fakemakerUnmasked = true;
+    await saveGameToFirebase();
+    // Knop verdwijnt automatisch door showScreen()
+    // Het juiste antwoord wordt nu niet meer getoond aan de Fakemaker
 });
