@@ -1,3 +1,29 @@
+// Voorbeeld voor backFromHostBtn
+const backFromHostBtn = document.getElementById('backFromHostBtn');
+if (backFromHostBtn) {
+    backFromHostBtn.addEventListener('click', function() {
+        showScreen('startScreen');
+    });
+}
+
+// Voorbeeld voor backFromJoinBtn
+const backFromJoinBtn = document.getElementById('backFromJoinBtn');
+if (backFromJoinBtn) {
+    backFromJoinBtn.addEventListener('click', function() {
+        showScreen('startScreen');
+    });
+}
+
+// Voorbeeld voor copyCodeBtn
+const copyCodeBtn = document.getElementById('copyCodeBtn');
+if (copyCodeBtn) {
+    copyCodeBtn.addEventListener('click', function() {
+        const gameCode = document.getElementById('gameCodeDisplay').textContent;
+        copyToClipboard(gameCode); // Ervan uitgaande dat copyToClipboard een globale functie is
+    });
+}
+
+// Zorg ervoor dat je showScreen en copyToClipboard functies correct gedefinieerd zijn.
 /* Truth Seekers Game - script.js with enhanced Firebase debugging */
 
 // Game state

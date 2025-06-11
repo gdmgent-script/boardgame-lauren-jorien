@@ -34,7 +34,7 @@
             <div class="form-group">
                 <input type="text" id="hostNameInput" placeholder="Jouw Naam" class="input-field">
                 <button id="createGameBtn" class="primary-button">Maak Spel</button>
-                <button id="backFromHostBtn" class="secondary-button" onclick="showScreen('startScreen')">Terug</button>
+                <button id="backFromHostBtn" class="secondary-button">Terug</button>
             </div>
         </div>
 
@@ -46,7 +46,7 @@
                 <input type="text" id="playerNameInput" placeholder="Jouw Naam" class="input-field">
                 <input type="text" id="gameCodeInput" placeholder="Spelcode" class="input-field" maxlength="5">
                 <button id="submitJoinBtn" class="primary-button">Deelnemen</button>
-                <button id="backFromJoinBtn" class="secondary-button" onclick="showScreen('startScreen')">Terug</button>
+                <button id="backFromJoinBtn" class="secondary-button">Terug</button>
                 <p id="joinErrorMessage" class="error-message hidden"></p>
             </div>
         </div>
@@ -79,7 +79,7 @@
             <div class="game-code">
                 <span id="gameCodeDisplay"></span>
             </div>
-            <button id="copyCodeBtn" class="secondary-button" onclick="copyToClipboard(document.getElementById('gameCodeDisplay').textContent)">Code Kopiëren</button>
+            <button id="copyCodeBtn" class="secondary-button">Code Kopiëren</button>
             <button id="shareGameBtn" class="secondary-button">Spellink Delen</button>
             
             <p id="shareSuccessMessage" class="success-message hidden"></p>
