@@ -287,6 +287,7 @@ async function createGame() {
       name: hostName,
       role: "",
       isHost: true,
+      steps: 0, // Voeg deze regel toe
     },
   ];
 
@@ -384,6 +385,7 @@ async function joinGame() {
       name: playerName,
       role: "",
       isHost: false,
+      steps: 0,
     };
 
     gameState.players.push(newPlayer);
@@ -694,15 +696,23 @@ async function submitAnswer(answer) {
 
   let resultMessage = "";
 
+  // Zoek de speler in de array
+  const playerIndex = gameState.players.findIndex(
+    (p) => p.name === gameState.playerName
+  );
+
   if (isCorrect) {
     document.getElementById("resultTitle").textContent = "Correct!";
     resultMessage = `${gameState.playerName} heeft het goed!`;
   } else {
     document.getElementById("resultTitle").textContent = "Wrong!";
-    resultMessage = `${gameState.playerName} heeft het fout!`;
+    // Trek 1-5 stappen af
+    const stepsBack = Math.floor(Math.random() * 5) + 1;
+    if (playerIndex !== -1) {
+      gameState.players[playerIndex].steps = (gameState.players[playerIndex].steps || 0) - stepsBack;
+    }
+    resultMessage = `${gameState.playerName} heeft het fout en gaat ${stepsBack} stappen achteruit!`;
   }
-
-  // Update player in players array (optioneel, als je iets wilt bijhouden)
 
   // Display result
   document.getElementById("resultMessage").textContent = resultMessage;

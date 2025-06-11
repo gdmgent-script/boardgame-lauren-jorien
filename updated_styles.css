@@ -611,16 +611,14 @@ button:disabled {
     right: 12px;
     z-index: 1000;
     background: #fff;
-    color: #d32f2f;
-    border: 1.5px solid #d32f2f;
-    border-radius: 18px;
-    padding: 5px 13px;
-    font-size: 0.95rem;
-    font-weight: 500;
-    box-shadow: 0 1px 4px rgba(0,0,0,0.07);
+    color: #333;
+    border: 2px solid #ccc;
+    border-radius: 22px;
+    padding: 8px 18px;
+    font-size: 1rem;
+    font-weight: 600;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
     opacity: 0.95;
-    display: none;
-    transition: background 0.2s;
 }
 
 @media (max-width: 600px) {
