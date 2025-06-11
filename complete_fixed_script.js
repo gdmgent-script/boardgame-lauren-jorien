@@ -65,24 +65,34 @@ document.addEventListener("DOMContentLoaded", async () => {
     if (!response.ok) {
       throw new Error(`HTTP error! status: ${response.status}`);
     }
-    gameState.questions = await response.json();
-    console.log(`Loaded ${gameState.questions.length} questions from questions.json`);
-    
-    // Shuffle questions for variety
-    shuffleQuestions();
+    const questionsData = await response.json();
+    if (!questionsData || questionsData.length === 0) {
+      // Ensure questionsData is an array and not empty
+      throw new Error("Questions data is empty or invalid. Ensure questions.json contains a valid array of questions.");
+    }
+    gameState.questions = questionsData;
+    console.log(`Loaded ${gameState.questions.length} questions.`);
+    shuffleQuestions(); // Shuffle questions for variety
   } catch (error) {
     console.error("Error loading questions:", error);
-    alert("Kon vragen niet laden. Controleer of questions.json beschikbaar is.");
+    alert(`Fout bij het laden van de vragen: ${error.message}. Controleer of 'questions.json' beschikbaar is in dezelfde map als het spel en correct geformatteerd is. Het spel kan niet starten zonder vragen.`);
+    // Optionally, display a persistent error message on the page if the alert is dismissed
+    // document.body.innerHTML = "<p style='color:red; text-align:center; padding-top: 50px;'>Kan het spel niet starten: Kon de vragen niet laden. Vernieuw de pagina en controleer 'questions.json'.</p>";
     return;
   }
 
   // Set up event listeners
   setupEventListeners();
   
-  // Check for game code in URL
+  // Check for game code in URL, which might change gameState.activeScreen and call showScreen
   checkForGameCodeInURL();
 
-  // Start listening for updates immediately to check connection status
+  // Ensure the correct screen (either from URL or default "startScreen") is shown.
+  // showScreen is called by checkForGameCodeInURL if a code is found.
+  const currentVisibleScreen = document.querySelector('.screen.active');
+  if (!currentVisibleScreen || currentVisibleScreen.id !== gameState.activeScreen) {
+    showScreen(gameState.activeScreen);
+  }
   startListeningForUpdates();
 });
 
@@ -905,8 +915,7 @@ async function showQuestion() {
   handleMediaContent(question);
 
   const previousScreenForSave = gameState.activeScreen;
-  gameState.activeScreen = "questionScreen"; // Ensure internal state is  }
-}/ Show the screen
+  gameState.activeScreen = "questionScreen"; // Ensure internal state is updated
 
   // If this call is by the current player to reveal the question (transitioning from another screen)
   // then save this state change to Firebase.
@@ -919,4 +928,4 @@ async function showQuestion() {
       showScreen(previousScreenForSave);
       alert("Kon de vraag niet aan andere spelers tonen. Probeer opnieuw.");
     }
-  }
+  } 
