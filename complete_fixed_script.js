@@ -378,36 +378,24 @@ function continueAfterRole() {
 
 // Start game (host only)
 async function startGame() {
-  // No longer require a Fakemaker to be in the game
-  // Just check that players have roles assigned
-  if (!gameState.players.some((player) => player.role)) {
-    alert("Spelers moeten eerst rollen toegewezen krijgen.");
+  // Only the host can start the game
+  const currentPlayer = gameState.players.find(p => p.name === gameState.playerName);
+  if (!currentPlayer || !currentPlayer.isHost) return;
+
+  // Require at least 2 players (host + 1)
+  if (gameState.players.length < 2) {
+    alert("Er moeten minstens 2 spelers zijn om te starten.");
     return;
   }
 
-  // Show loading indicator
-  const startBtn = document.getElementById("startGameBtn");
-  startBtn.disabled = true;
-  startBtn.textContent = "Spel starten...";
+  gameState.gameStarted = true;
+  gameState.currentPlayerIndex = 0;
+  gameState.currentQuestionIndex = 0;
+  gameState.activeScreen = "gameScreen";
 
-  try {
-    // Update game state
-    gameState.gameStarted = true;
-    gameState.activeScreen = "gameScreen"; // Transition all players to the game screen
-
-    // Save to Firebase
-    console.log("Attempting to save game start to Firebase:", gameState.gameCode);
-    await saveGameToFirebase();
-    // Firebase listener will handle showing the screen and updating display
-
-  } catch (error) {
-    console.error("Error starting game:", error);
-    alert("Kon spel niet starten. Probeer het opnieuw.");
-  } finally {
-    // Reset button
-    startBtn.disabled = false;
-    startBtn.textContent = "Spel Starten";
-  }
+  await saveGameToFirebase();
+  showScreen("gameScreen");
+  updateGameDisplay();
 }
 
 // Show current question
@@ -635,32 +623,19 @@ function showError(elementId, message) {
 
 // Update player list in host screen
 function updatePlayerList() {
-  const playerListElement = document.getElementById("hostPlayerList");
-  if (!playerListElement) return;
-  
-  playerListElement.innerHTML = "";
-
+  const playerListDiv = document.getElementById("hostPlayerList");
+  if (!playerListDiv) return;
+  playerListDiv.innerHTML = "";
   gameState.players.forEach((player) => {
-    const playerItem = document.createElement("div");
-    playerItem.className = "player-item";
-
-    const nameSpan = document.createElement("span");
-    nameSpan.className = "player-name";
-    nameSpan.textContent = player.name;
-
-    const roleSpan = document.createElement("span");
-    roleSpan.className = "player-role";
-    roleSpan.textContent = player.role ? "Rol toegewezen" : "Geen rol";
-
-    playerItem.appendChild(nameSpan);
-    playerItem.appendChild(roleSpan);
-    playerListElement.appendChild(playerItem);
+    const div = document.createElement("div");
+    div.textContent = player.name + (player.isHost ? " (Host)" : "");
+    playerListDiv.appendChild(div);
   });
 
-  // Enable start button if conditions are met
+  // Enable "Spel Starten" if at least 2 players
   const startBtn = document.getElementById("startGameBtn");
   if (startBtn) {
-    startBtn.disabled = gameState.players.length < 2 || !gameState.players.some((p) => p.role);
+    startBtn.disabled = gameState.players.length < 2;
   }
 }
 
