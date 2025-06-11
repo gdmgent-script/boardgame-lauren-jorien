@@ -702,13 +702,20 @@ async function submitAnswer(answer) {
     resultMessage = `${gameState.playerName} heeft het fout!`;
   }
 
-  // Update player in players array
-  const playerIndex = gameState.players.findIndex(
-    (p) => p.name === gameState.playerName
-  );
+  // Update player in players array (optioneel, als je iets wilt bijhouden)
 
   // Display result
   document.getElementById("resultMessage").textContent = resultMessage;
+
+  // Zet het resultaat in de globale state zodat het bij alle spelers zichtbaar is
+  gameState.lastResult = { title: isCorrect ? "Correct!" : "Wrong!", message: resultMessage };
+  gameState.activeScreen = "resultScreen";
+
+  // Sla op in Firebase zodat alle spelers het zien
+  await saveGameToFirebase();
+
+  // Toon het resultScreen
+  showScreen("resultScreen");
 }
 
 // Next turn

@@ -573,7 +573,7 @@ button:disabled {
 @media (max-width: 600px) {
     .escape-btn {
         font-size: 0.95rem;
-        padding: 7px 14px;
+        padding: 4px 10px;
         top: 10px;
         left: 10px;
     }
@@ -581,8 +581,8 @@ button:disabled {
 
 #resultScreen #escapeBtn {
     position: absolute;
-    top: 16px;
-    left: 16px;
+    top: 12px;
+    left: 12px;
     z-index: 10;
     background: #fff;
     color: #333;
@@ -598,7 +598,7 @@ button:disabled {
 @media (max-width: 600px) {
     #resultScreen #escapeBtn {
         font-size: 0.95rem;
-        padding: 7px 14px;
+        padding: 4px 10px;
         top: 10px;
         left: 10px;
     }
@@ -623,15 +623,11 @@ button:disabled {
     transition: background 0.2s;
 }
 
-.unmask-btn:active {
-    background: #ffeaea;
-}
-
 @media (max-width: 600px) {
     .unmask-btn {
-        font-size: 0.90rem;
+        font-size: 0.95rem;
         padding: 4px 10px;
-        top: 6px;
-        right: 6px;
+        top: 10px;
+        right: 10px;
     }
 }
