@@ -46,6 +46,10 @@ const firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 const database = firebase.database();
 
+// Global variables to hold the reference to the active game listener and its callback
+let currentGameRef = null;
+let onValueChangeCallback = null;
+
 // Shuffle questions
 function shuffleQuestions() {
   for (let i = gameState.questions.length - 1; i > 0; i--) {
@@ -617,6 +621,8 @@ async function nextTurn() {
 
 // Reset game
 function resetGame() {
+  stopListeningForUpdates(); // Detach any active Firebase listener
+
   // Reset game state
   Object.assign(gameState, {
     gameCode: "",
@@ -625,18 +631,43 @@ function resetGame() {
     currentQuestionIndex: 0,
     fakemakerName: "",
     fakemakerUnmasked: false,
-    playerName: "",
-    playerRole: "",
+    playerName: "", // Clear player name
+    playerRole: "", // Clear player role
     playerSteps: {},
     activeScreen: "startScreen",
     lastResult: { title: "", message: "" },
     gameStarted: false,
   });
 
-  // Shuffle questions again
+  // Clear UI elements that might persist old game data
+  const hostNameInput = document.getElementById("hostNameInput");
+  if (hostNameInput) hostNameInput.value = "";
+  
+  const playerNameInput = document.getElementById("playerNameInput");
+  if (playerNameInput) playerNameInput.value = "";
+
+  const gameCodeInput = document.getElementById("gameCodeInput");
+  if (gameCodeInput) gameCodeInput.value = "";
+
+  const roleCodeInput = document.getElementById("roleCodeInput");
+  if (roleCodeInput) roleCodeInput.value = "";
+
+  const gameCodeDisplay = document.getElementById("gameCodeDisplay");
+  if (gameCodeDisplay) gameCodeDisplay.textContent = "";
+  
+  const playerListDiv = document.getElementById("hostPlayerList");
+  if (playerListDiv) playerListDiv.innerHTML = "";
+
+  // Shuffle questions again for a potential new game
   shuffleQuestions();
 
+  // Explicitly set activeScreen before showing it
+  gameState.activeScreen = "startScreen";
   showScreen("startScreen");
+  console.log("Game reset. Navigating to startScreen.");
+
+  // Update connection status to reflect no active game (or a neutral state)
+  updateConnectionStatus(false); // Passing false indicates no active connection
 }
 
 // Copy game code to clipboard
@@ -789,10 +820,21 @@ async function loadGameFromFirebase(gameCode) {
 }
 
 function startListeningForUpdates() {
-  if (!gameState.gameCode) return;
-  const gameRef = database.ref(`games/${gameState.gameCode}`);
-  
-  gameRef.on('value', (snapshot) => {
+  // If a listener is already active for a (possibly different) game, detach it first.
+  if (currentGameRef && onValueChangeCallback) {
+    currentGameRef.off('value', onValueChangeCallback);
+    console.log("Detached previous Firebase listener.");
+    currentGameRef = null;
+    onValueChangeCallback = null;
+  }
+
+  if (!gameState.gameCode) {
+    console.log("startListeningForUpdates: No game code, not attaching listener.");
+    return;
+  }
+
+  currentGameRef = database.ref(`games/${gameState.gameCode}`);
+  onValueChangeCallback = (snapshot) => {
     const data = snapshot.val();
     if (data) {
       // Update local game state
@@ -857,6 +899,17 @@ function startListeningForUpdates() {
     console.error("Firebase listener error:", error);
     updateConnectionStatus(false);
   });
+
+  console.log(`Attached Firebase listener for game: ${gameState.gameCode}`);
+}
+
+function stopListeningForUpdates() {
+  if (currentGameRef && onValueChangeCallback) {
+    currentGameRef.off('value', onValueChangeCallback);
+    console.log("Firebase listener detached for game:", gameState.gameCode || "N/A (no code)");
+    currentGameRef = null;
+    onValueChangeCallback = null;
+  }
 }
 
 function updateConnectionStatus(connected) {
@@ -869,7 +922,7 @@ function updateConnectionStatus(connected) {
       status.textContent = "Verbonden";
     } else {
       indicator.className = "connection-indicator offline";
-      status.textContent = "Verbinding verbroken";
+      status.textContent = gameState.gameCode ? "Verbinding verbroken" : "Niet verbonden";
     }
   }
 }
