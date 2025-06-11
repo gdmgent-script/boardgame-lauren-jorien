@@ -269,14 +269,20 @@ async function joinGame() {
 
   playerName = sanitizeFirebaseKey(playerName);
   if (!playerName) {
+    // The showError function handles hiding the message after a timeout.
     showError("joinErrorMessage", "Voer je naam en spelcode in");
     return;
   }
 
+  // Capture the joining player's current screen state before modifications for potential error recovery.
+  const originalJoiningPlayerScreen = gameState.activeScreen;
+
+  // Show loading indicator
   document.getElementById("submitJoinBtn").disabled = true;
   document.getElementById("submitJoinBtn").textContent = "Deelnemen...";
 
   try {
+    // Try to load game from Firebase
     console.log("Attempting to load game from Firebase:", gameCode);
     const gameData = await loadGameFromFirebase(gameCode);
 
@@ -285,14 +291,19 @@ async function joinGame() {
         "joinErrorMessage",
         "Spel niet gevonden. Controleer de code en probeer opnieuw."
       );
+      // Restore original screen state if game not found
+      gameState.activeScreen = originalJoiningPlayerScreen;
       return;
     }
 
+    // Check if name is already taken
     if (gameData.players && gameData.players.some((p) => p.name === playerName)) {
       showError(
         "joinErrorMessage",
         "Naam is al in gebruik. Kies een andere naam."
       );
+      // Restore original screen state if name is taken
+      gameState.activeScreen = originalJoiningPlayerScreen;
       return;
     }
 
@@ -307,8 +318,6 @@ async function joinGame() {
     gameState.playerSteps = gameData.playerSteps || {};
     gameState.questions = gameData.questions || [];
     gameState.gameStarted = gameData.gameStarted || false;
-    // Preserve the activeScreen from Firebase, do NOT overwrite it with the joining player's local state
-    gameState.activeScreen = gameData.activeScreen || "hostGameScreen";
 
     // Add new player
     const newPlayer = {
@@ -319,21 +328,35 @@ async function joinGame() {
     };
 
     gameState.players.push(newPlayer);
+
+    // Initialize player steps
     gameState.playerSteps[playerName] = 0;
 
-    // Save updated game state (do NOT change activeScreen!)
+    // Determine the activeScreen that should be persisted in Firebase.
+    // This should be the screen the game was on before this player joined (e.g., hostGameScreen).
+    const screenToPersistInFirebase = gameData.activeScreen || "hostGameScreen";
+
+    // Temporarily set gameState.activeScreen to the value that needs to be saved to Firebase.
+    // This prevents the joining player's local screen (e.g., "startScreen") from being saved.
+    gameState.activeScreen = screenToPersistInFirebase;
+
     console.log("Attempting to save updated game state to Firebase after join:", gameState.gameCode);
-    await saveGameToFirebase();
+    await saveGameToFirebase(); // Saves with activeScreen = screenToPersistInFirebase
+
+    // After successful save, set the joining player's local activeScreen for their next step.
+    gameState.activeScreen = "roleCodeScreen";
+    showScreen("roleCodeScreen"); // Navigate the joining player locally
 
     // Start listening for updates
     startListeningForUpdates();
 
-    // Only for this joining player, show the role code screen locally
-    showScreen("roleCodeScreen");
   } catch (error) {
     console.error("Error joining game:", error);
     showError("joinErrorMessage", "Fout bij deelnemen aan spel. Probeer het opnieuw.");
+    // Restore the original screen state for the joining player if an error occurred
+    gameState.activeScreen = originalJoiningPlayerScreen;
   } finally {
+    // Reset button
     document.getElementById("submitJoinBtn").disabled = false;
     document.getElementById("submitJoinBtn").textContent = "Deelnemen";
   }
