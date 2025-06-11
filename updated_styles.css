@@ -117,6 +117,12 @@ button:disabled {
     background-color: #e9ecef;
 }
 
+.white-button {
+  background: #fff;
+  color: #222;
+  border: 2px solid #ccc;
+}
+
 /* Form Styles */
 .form-group {
     display: flex;
@@ -541,148 +547,86 @@ button:disabled {
     }
 }
 
-
-/* Not Your Turn Info */
-.not-your-turn-info {
-    background-color: rgba(255, 193, 7, 0.2);
-    border-radius: 10px;
-    padding: 15px;
-    margin: 20px 0;
-    border: 2px solid #ffc107;
-    text-align: center;
-}
-
-.not-your-turn-info p {
-    margin-bottom: 10px;
-}
-
-.not-your-turn-info .highlight {
-    color: #ffc107;
-    font-weight: bold;
-}
-
+/* Escape Button Styles */
 .escape-btn {
     position: fixed;
-    top: 20px;
-    left: 20px;
-    padding: 10px 20px;
-    background-color: #dc3545;
-    color: white;
-    border: none;
-    border-radius: 5px;
-    cursor: pointer;
-    font-size: 16px;
-    box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.2);
-    transition: background-color 0.3s ease, transform 0.2s ease;
+    top: 18px;
+    left: 18px;
     z-index: 1000;
-}
-
-.escape-btn:hover {
-    background-color: #c82333;
-    transform: scale(1.05);
-}
-
-.unmask-btn {
-    position: fixed;
-    top: 20px;
-    right: 20px;
-    padding: 10px 20px;
-    background-color: #28a745;
-    color: white;
-    border: none;
-    border-radius: 5px;
-    cursor: pointer;
-    font-size: 16px;
-    box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.2);
-    transition: background-color 0.3s ease, transform 0.2s ease;
-    z-index: 1000;
-}
-
-.unmask-btn:hover {
-    background-color: #218838;
-    transform: scale(1.05);
-}
-
-/* Hiro Scanner Overlay Styles */
-.scanner-overlay {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: rgba(0, 0, 0, 0.8);
-    z-index: 2000;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-}
-
-.scanner-overlay.hidden {
+    background: #fff;
+    color: #333;
+    border: 2px solid #ccc;
+    border-radius: 22px;
+    padding: 8px 18px;
+    font-size: 1rem;
+    font-weight: 600;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    opacity: 0.95;
+    transition: background 0.2s;
     display: none;
 }
 
-.close-scanner-btn {
+.escape-btn:active {
+    background: #eee;
+}
+
+@media (max-width: 600px) {
+    .escape-btn {
+        font-size: 0.95rem;
+        padding: 4px 10px;
+        top: 10px;
+        left: 10px;
+    }
+}
+
+#resultScreen #escapeBtn {
     position: absolute;
-    top: 20px;
-    right: 20px;
-    padding: 10px 20px;
-    background: #f44336;
-    color: white;
-    border: none;
-    border-radius: 5px;
-    cursor: pointer;
-    font-size: 16px;
-    font-weight: bold;
-    z-index: 2001;
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+    top: 12px;
+    left: 12px;
+    z-index: 10;
+    background: #fff;
+    color: #333;
+    border: 2px solid #ccc;
+    border-radius: 22px;
+    padding: 8px 18px;
+    font-size: 1rem;
+    font-weight: 600;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    opacity: 0.95;
 }
 
-.close-scanner-btn:hover {
-    background: #d32f2f;
-}
-
-#arSceneContainer {
-    width: 80%;
-    height: 80%;
-    max-width: 600px;
-    max-height: 450px;
-    border-radius: 10px;
-    overflow: hidden;
-    background: #000;
-    border: 3px solid #4CAF50;
-}
-
-#arSceneContainer a-scene {
-    width: 100%;
-    height: 100%;
-}
-
-/* Mobile responsive for scanner */
-@media (max-width: 768px) {
-    #arSceneContainer {
-        width: 90%;
-        height: 70%;
-    }
-    
-    .close-scanner-btn {
-        top: 15px;
-        right: 15px;
-        padding: 8px 16px;
-        font-size: 14px;
+@media (max-width: 600px) {
+    #resultScreen #escapeBtn {
+        font-size: 0.95rem;
+        padding: 4px 10px;
+        top: 10px;
+        left: 10px;
     }
 }
 
-@media (max-width: 480px) {
-    #arSceneContainer {
-        width: 95%;
-        height: 60%;
-    }
-    
-    .close-scanner-btn {
+/* Unmask Button Styles */
+.unmask-btn {
+    position: fixed;
+    top: 12px;
+    right: 12px;
+    z-index: 1000;
+    background: #fff;
+    color: #333;
+    border: 2px solid #ccc;
+    border-radius: 22px;
+    padding: 8px 18px;
+    font-size: 1rem;
+    font-weight: 600;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    opacity: 0.95;
+    display: none;
+}
+
+@media (max-width: 600px) {
+    .unmask-btn {
+        font-size: 0.95rem;
+        padding: 4px 10px;
         top: 10px;
         right: 10px;
-        padding: 6px 12px;
-        font-size: 12px;
     }
 }
-

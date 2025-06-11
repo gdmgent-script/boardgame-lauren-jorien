@@ -25,7 +25,7 @@
             <p>Ontmasker de Fakemaker!</p>
             <div class="button-container">
                 <button id="hostGameBtn" class="primary-button">Spel Hosten</button>
-                <button id="goToJoinBtn" class="secondary-button">Deelnemen</n>
+                <button id="goToJoinBtn" class="secondary-button">Deelnemen</button>
             </div>
         </div>
 
@@ -107,7 +107,7 @@
                 <p>Het is jouw beurt!</p>
                 <div style="display: flex; justify-content: center; align-items: center; gap: 10px;">
                     <button id="showQuestionBtn" class="primary-button">Toon Vraag</button>
-                    <button id="scanHiroGameBtn" class="secondary-button" onclick="openHiroScanner();">Scan Hiro</button>
+                    <button id="scanHiroGameBtn" class="secondary-button">Scan Hiro</button>
                 </div>
             </div>
             
@@ -157,24 +157,15 @@
             <h1 id="resultTitle">Resultaat</h1>
             <p id="resultMessage"></p>
             <button id="nextTurnBtn" class="primary-button">Volgende Beurt</button>
-        </div>
-
+        
         <!-- AR View Container (Overlay) -->
         <div id="arViewContainer" class="ar-view-overlay">
             <!-- A-Frame scene will be dynamically inserted here by script.js -->
         </div>
 
         <!-- Global AR Button - Initially hidden -->
-        <button id="globalScanHiroBtn" class="global-ar-button hidden" onclick="openHiroScanner();">scan Hiro</button>
+        <button id="globalScanHiroBtn" class="global-ar-button hidden">scan Hiro</button>
     </div>
-
-    <!-- Hiro Scanner Container -->
-    <div id="scannerContainer" class="scanner-overlay hidden">
-        <button id="closeScanner" class="close-scanner-btn">Sluiten</button>
-        <div id="arSceneContainer"></div>
-    </div>
-
     <script src="complete_fixed_script.js"></script>
 </body>
 </html>
-
