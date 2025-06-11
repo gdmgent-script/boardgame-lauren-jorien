@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Truth Seekers - CTRL+P</title>
-    <link rel="stylesheet" href="updated_styles.css">
+    <link rel="stylesheet" href="modified_styles.css">
     <!-- Firebase SDK -->
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
@@ -35,7 +35,7 @@
             <div class="form-group">
                 <input type="text" id="hostNameInput" placeholder="Jouw Naam" class="input-field">
                 <button id="createGameBtn" class="primary-button">Maak Spel</button>
-                <button id="backFromHostBtn" class="secondary-button" onclick="showScreen(\'startScreen\')">Terug</button>
+                <button id="backFromHostBtn" class="secondary-button">Terug</button>
             </div>
         </div>
 
@@ -47,7 +47,7 @@
                 <input type="text" id="playerNameInput" placeholder="Jouw Naam" class="input-field">
                 <input type="text" id="gameCodeInput" placeholder="Spelcode" class="input-field" maxlength="5">
                 <button id="submitJoinBtn" class="primary-button">Deelnemen</button>
-                <button id="backFromJoinBtn" class="secondary-button" onclick="showScreen(\'startScreen\')">Terug</button>
+                <button id="backFromJoinBtn" class="secondary-button">Terug</button>
                 <p id="joinErrorMessage" class="error-message hidden"></p>
             </div>
         </div>
@@ -162,17 +162,31 @@
 
         <!-- AR Screen -->
         <div id="arScreen" class="screen">
-            <a-scene embedded arjs>
-                <a-marker preset="hiro">
-                    <a-entity id="dynamicObject" position="0 0 0"></a-entity>
-                </a-marker>
-                <a-entity camera></a-entity>
-            </a-scene>
-            <button id="backFromARBtn" class="secondary-button" onclick="showScreen(\'startScreen\')">Terug naar Start</button>
+            <h1>AR Ervaring</h1>
+            <p>Druk op de camera knop om de AR camera te starten</p>
+            
+            <!-- Camera button -->
+            <div class="camera-controls">
+                <button id="startCameraBtn" class="primary-button">Start Camera</button>
+                <button id="stopCameraBtn" class="secondary-button hidden">Stop Camera</button>
+            </div>
+            
+            <!-- Small camera view container -->
+            <div id="cameraContainer" class="camera-container hidden">
+                <a-scene id="arScene" embedded arjs="sourceType: webcam; debugUIEnabled: false;" 
+                         style="width: 300px; height: 200px;">
+                    <a-marker preset="hiro">
+                        <a-entity id="dynamicObject" position="0 0 0"></a-entity>
+                    </a-marker>
+                    <a-entity camera></a-entity>
+                </a-scene>
+            </div>
+            
+            <button id="backFromARBtn" class="secondary-button">Terug</button>
         </div>
     </div>
 
-    <script src="script.js"></script>
+    <script src="modified_script.js"></script>
 </body>
 </html>
 

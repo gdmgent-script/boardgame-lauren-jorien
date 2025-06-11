@@ -27,6 +27,10 @@ const roleCodes = [
 // DOM Elements
 const screens = document.querySelectorAll(".screen");
 
+// Camera state
+let cameraStarted = false;
+let arScene = null;
+
 // Firebase configuration
 const firebaseConfig = {
   apiKey: "AIzaSyDWuEvMYs1bEZs8OV8TRaILoI_HA2Urx4I",
@@ -53,6 +57,71 @@ function shuffleQuestions() {
       gameState.questions[i],
     ];
   }
+}
+
+// Show a specific screen
+function showScreen(screenId) {
+  screens.forEach((screen) => {
+    screen.classList.remove("active");
+  });
+  document.getElementById(screenId).classList.add("active");
+  
+  // Stop camera when leaving AR screen
+  if (screenId !== "arScreen" && cameraStarted) {
+    stopCamera();
+  }
+}
+
+// Camera functions
+function startCamera() {
+  if (cameraStarted) return;
+  
+  const cameraContainer = document.getElementById("cameraContainer");
+  const startBtn = document.getElementById("startCameraBtn");
+  const stopBtn = document.getElementById("stopCameraBtn");
+  
+  // Show camera container
+  cameraContainer.classList.remove("hidden");
+  
+  // Toggle buttons
+  startBtn.classList.add("hidden");
+  stopBtn.classList.remove("hidden");
+  
+  // Initialize AR scene
+  arScene = document.getElementById("arScene");
+  if (arScene) {
+    // Force A-Frame to initialize the camera
+    arScene.setAttribute("arjs", "sourceType: webcam; debugUIEnabled: false;");
+  }
+  
+  cameraStarted = true;
+}
+
+function stopCamera() {
+  if (!cameraStarted) return;
+  
+  const cameraContainer = document.getElementById("cameraContainer");
+  const startBtn = document.getElementById("startCameraBtn");
+  const stopBtn = document.getElementById("stopCameraBtn");
+  
+  // Hide camera container
+  cameraContainer.classList.add("hidden");
+  
+  // Toggle buttons
+  startBtn.classList.remove("hidden");
+  stopBtn.classList.add("hidden");
+  
+  // Stop camera stream
+  if (arScene) {
+    // Stop the webcam stream
+    const video = arScene.querySelector("video");
+    if (video && video.srcObject) {
+      const tracks = video.srcObject.getTracks();
+      tracks.forEach(track => track.stop());
+    }
+  }
+  
+  cameraStarted = false;
 }
 
 // Initialize
@@ -140,8 +209,26 @@ document.addEventListener("DOMContentLoaded", async () => {
     .getElementById("goToARBtn")
     .addEventListener("click", () => {
       showScreen("arScreen");
-      initializeAR(); // Initialize AR when switching to the AR screen
     });
+
+  // Add event listeners for camera controls
+  document
+    .getElementById("startCameraBtn")
+    .addEventListener("click", startCamera);
+  document
+    .getElementById("stopCameraBtn")
+    .addEventListener("click", stopCamera);
+
+  // Add event listeners for back buttons
+  document
+    .getElementById("backFromHostBtn")
+    .addEventListener("click", () => showScreen("startScreen"));
+  document
+    .getElementById("backFromJoinBtn")
+    .addEventListener("click", () => showScreen("startScreen"));
+  document
+    .getElementById("backFromARBtn")
+    .addEventListener("click", () => showScreen("startScreen"));
 
   // Check for game code in URL
   checkForGameCodeInURL();
@@ -149,14 +236,6 @@ document.addEventListener("DOMContentLoaded", async () => {
   // Start listening for updates immediately to check connection status
   startListeningForUpdates();
 });
-
-// Show a specific screen
-function showScreen(screenId) {
-  screens.forEach((screen) => {
-    screen.classList.remove("active");
-  });
-  document.getElementById(screenId).classList.add("active");
-}
 
 // Generate a random game code
 function generateGameCode() {
@@ -512,18 +591,34 @@ function showQuestion() {
   document.getElementById("externalActionContainer").classList.add("hidden");
 
   // Show appropriate media based on question type
-  if (currentQuestion.type === "image") {
-    document.getElementById("questionImage").src = currentQuestion.imagePath;
+  if (currentQuestion.type === "image" && currentQuestion.imageUrl) {
+    document.getElementById("questionImage").src = currentQuestion.imageUrl;
     document.getElementById("imageContainer").classList.remove("hidden");
   } else if (currentQuestion.type === "video" && currentQuestion.videoUrl) {
-    document.getElementById("questionVideo").src = currentQuestion.videoUrl;
+    document.getElementById("videoSource").src = currentQuestion.videoUrl;
+    document.getElementById("questionVideo").load();
     document.getElementById("videoContainer").classList.remove("hidden");
-  } else if (
-    currentQuestion.type === "external_action" &&
-    currentQuestion.externalActionPrompt
-  ) {
-    document.getElementById("externalActionPrompt").textContent = currentQuestion.externalActionPrompt;
+  } else if (currentQuestion.type === "external" && currentQuestion.externalPrompt) {
+    document.getElementById("externalActionPrompt").textContent = currentQuestion.externalPrompt;
     document.getElementById("externalActionContainer").classList.remove("hidden");
+  }
+
+  // Show appropriate answer buttons
+  if (currentQuestion.type === "multiple_choice") {
+    document.getElementById("trueFalseButtons").classList.add("hidden");
+    document.getElementById("multipleChoiceButtons").classList.remove("hidden");
+    
+    // Set up multiple choice options
+    currentQuestion.options.forEach((option, index) => {
+      const button = document.getElementById(`option${index}`);
+      if (button) {
+        button.textContent = option;
+        button.onclick = () => submitAnswer(index);
+      }
+    });
+  } else {
+    document.getElementById("trueFalseButtons").classList.remove("hidden");
+    document.getElementById("multipleChoiceButtons").classList.add("hidden");
   }
 
   showScreen("questionScreen");
@@ -534,118 +629,99 @@ async function submitAnswer(answer) {
   const currentQuestion = gameState.questions[gameState.currentQuestionIndex];
   const isCorrect = answer === currentQuestion.answer;
 
-  let resultMessage = "";
-  let stepChange = 0;
-
-  if (isCorrect) {
-    document.getElementById("resultTitle").textContent = "Correct!";
-    stepChange = 1;
-    resultMessage = `${gameState.playerName} gaat 1 stap vooruit.`;
-  } else {
-    document.getElementById("resultTitle").textContent = "Wrong!";
-    stepChange = -Math.floor(Math.random() * 5) - 1; // -1 to -5 steps
-    resultMessage = `${gameState.playerName} gaat ${Math.abs(stepChange)} stap(pen) achteruit.`;
-  }
-
   // Update player steps
-  gameState.playerSteps[gameState.playerName] = (
-    gameState.playerSteps[gameState.playerName] || 0
-  ) + stepChange;
-  if (gameState.playerSteps[gameState.playerName] < 0) {
-    gameState.playerSteps[gameState.playerName] = 0;
+  const currentPlayerName = gameState.players[gameState.currentPlayerIndex].name;
+  
+  if (isCorrect) {
+    gameState.playerSteps[currentPlayerName] = (gameState.playerSteps[currentPlayerName] || 0) + 1;
+  } else {
+    gameState.playerSteps[currentPlayerName] = Math.max(0, (gameState.playerSteps[currentPlayerName] || 0) - 1);
   }
-
-  // Update player in players array
-  const playerIndex = gameState.players.findIndex(
-    (p) => p.name === gameState.playerName
-  );
-  if (playerIndex !== -1) {
-    gameState.players[playerIndex].steps = gameState.playerSteps[gameState.playerName];
-  }
-
-  // Display result
-  document.getElementById("resultMessage").textContent = resultMessage;
-  document.getElementById("stepsDisplayResult").textContent = gameState.playerSteps[gameState.playerName];
 
   // Save to Firebase
-  try {
-    console.log("Attempting to save answer to Firebase:", gameState.gameCode);
-    await saveGameToFirebase();
-    showScreen("resultScreen");
-  } catch (error) {
-    console.error("Error saving answer:", error);
-    alert("Error saving your answer. Please try again.");
+  await saveGameToFirebase();
+
+  // Show result
+  showResult(isCorrect, answer);
+}
+
+// Show result
+function showResult(isCorrect, playerAnswer) {
+  const currentQuestion = gameState.questions[gameState.currentQuestionIndex];
+  const currentPlayerName = gameState.players[gameState.currentPlayerIndex].name;
+  const steps = gameState.playerSteps[currentPlayerName] || 0;
+
+  document.getElementById("resultTitle").textContent = isCorrect ? "Correct!" : "Incorrect!";
+  
+  let answerText;
+  if (currentQuestion.type === "multiple_choice") {
+    answerText = `Je antwoord: ${currentQuestion.options[playerAnswer]}`;
+  } else {
+    answerText = `Je antwoord: ${playerAnswer ? "Echt" : "Fake"}`;
   }
+  
+  document.getElementById("resultMessage").textContent = answerText;
+  document.getElementById("stepsDisplayResult").textContent = steps;
+  
+  const stepChange = isCorrect ? "+1 stap" : "-1 stap";
+  document.getElementById("stepChange").textContent = stepChange;
+  document.getElementById("stepChange").style.color = isCorrect ? "#4CAF50" : "#f44336";
+
+  showScreen("resultScreen");
 }
 
 // Next turn
 async function nextTurn() {
   // Move to next player
-  gameState.currentPlayerIndex = (
-    gameState.currentPlayerIndex + 1
-  ) % gameState.players.length;
-
-  // Move to next question if we've gone through all players
+  gameState.currentPlayerIndex = (gameState.currentPlayerIndex + 1) % gameState.players.length;
+  
+  // Move to next question if all players have answered
   if (gameState.currentPlayerIndex === 0) {
     gameState.currentQuestionIndex++;
-
+    
     // Check if game is over
     if (gameState.currentQuestionIndex >= gameState.questions.length) {
-      endGame();
+      // Game over - show final results
+      showFinalResults();
       return;
     }
   }
 
   // Save to Firebase
-  try {
-    console.log("Attempting to save next turn to Firebase:", gameState.gameCode);
-    await saveGameToFirebase();
+  await saveGameToFirebase();
 
-    // Update display
-    updateGameDisplay();
-
-    // Show game screen
-    showScreen("gameScreen");
-  } catch (error) {
-    console.error("Error updating turn:", error);
-    alert("Error updating turn. Please try again.");
-  }
+  // Update display and show game screen
+  updateGameDisplay();
+  showScreen("gameScreen");
 }
 
-// End game
-function endGame() {
+// Show final results
+function showFinalResults() {
   // Find winner (player with most steps)
+  let winner = null;
   let maxSteps = -1;
-  let winners = [];
-
-  Object.entries(gameState.playerSteps).forEach(([name, steps]) => {
+  
+  for (const [playerName, steps] of Object.entries(gameState.playerSteps)) {
     if (steps > maxSteps) {
       maxSteps = steps;
-      winners = [name];
-    } else if (steps === maxSteps) {
-      winners.push(name);
+      winner = playerName;
     }
-  });
-
-  // Display winner
-  document.getElementById("resultTitle").textContent = "Game Over!";
-
-  if (winners.length === 1) {
-    document.getElementById("resultMessage").textContent = `${winners[0]} wins with ${maxSteps} steps!`;
-  } else {
-    document.getElementById("resultMessage").textContent = `It's a tie between ${winners.join(" and ")} with ${maxSteps} steps!`;
   }
 
-  // Change button text
+  document.getElementById("resultTitle").textContent = "Game Over!";
+  document.getElementById("resultMessage").textContent = `Winner: ${winner} with ${maxSteps} steps!`;
+  document.getElementById("stepsDisplayResult").textContent = gameState.playerSteps[gameState.playerName] || 0;
+  document.getElementById("stepChange").textContent = "Final Score";
+  
+  // Hide next turn button
   document.getElementById("nextTurnBtn").style.display = "none";
-  document.getElementById("newGameBtn").textContent = "Back to Start";
-
+  
   showScreen("resultScreen");
 }
 
 // Reset game
 function resetGame() {
-  // Clear game state
+  // Reset game state
   gameState.gameCode = "";
   gameState.players = [];
   gameState.currentPlayerIndex = 0;
@@ -655,264 +731,152 @@ function resetGame() {
   gameState.playerName = "";
   gameState.playerRole = "";
   gameState.playerSteps = {};
-  gameState.gameStarted = false;
-
-  // Stop listening for updates
-  stopListeningForUpdates();
 
   // Show start screen
   showScreen("startScreen");
+  
+  // Show next turn button again
+  document.getElementById("nextTurnBtn").style.display = "block";
 }
 
-// Save game to Firebase
-async function saveGameToFirebase() {
-  if (!gameState.gameCode) return;
-
-  const gameRef = database.ref(`games/${gameState.gameCode}`);
-
-  // Create a sanitized copy of the game state to ensure no undefined values
-  const sanitizedGameState = {
-    players: gameState.players || [],
-    currentPlayerIndex: gameState.currentPlayerIndex || 0,
-    currentQuestionIndex: gameState.currentQuestionIndex || 0,
-    fakemakerName: gameState.fakemakerName || "",
-    fakemakerUnmasked: gameState.fakemakerUnmasked === true,
-    playerSteps: gameState.playerSteps || {},
-    questions: gameState.questions || [],
-    gameStarted: gameState.gameStarted === true,
-    lastUpdated: firebase.database.ServerValue.TIMESTAMP,
-  };
-
+// Share game
+async function shareGame() {
+  const gameUrl = `${window.location.origin}${window.location.pathname}?game=${gameState.gameCode}`;
+  
   try {
-    await gameRef.set(sanitizedGameState);
-    console.log("Game state saved to Firebase successfully.", sanitizedGameState);
-  } catch (error) {
-    console.error("Error saving game state to Firebase:", error);
-    throw error; // Re-throw to be caught by calling function
-  }
-}
-
-// Load game from Firebase
-async function loadGameFromFirebase(gameCode) {
-  if (!gameCode) return null;
-
-  const gameRef = database.ref(`games/${gameCode}`);
-
-  try {
-    const snapshot = await gameRef.once("value");
-    const gameData = snapshot.val();
-    console.log("Game data loaded from Firebase:", gameData);
-    return gameData;
-  } catch (error) {
-    console.error("Error loading game from Firebase:", error);
-    return null;
-  }
-}
-
-// Start listening for updates
-function startListeningForUpdates() {
-  if (!gameState.gameCode) return;
-
-  const gameRef = database.ref(`games/${gameState.gameCode}`);
-
-  // Listen for game updates
-  gameRef.on("value", (snapshot) => {
-    const data = snapshot.val();
-    console.log("Firebase real-time update received:", data);
-    if (!data) {
-      console.warn("No data received from Firebase snapshot.");
-      return;
-    }
-
-    // Update local game state
-    gameState.players = data.players || gameState.players;
-    gameState.currentPlayerIndex = data.currentPlayerIndex !== undefined ? data.currentPlayerIndex : gameState.currentPlayerIndex;
-    gameState.currentQuestionIndex = data.currentQuestionIndex !== undefined ? data.currentQuestionIndex : gameState.currentQuestionIndex;
-    gameState.fakemakerName = data.fakemakerName || gameState.fakemakerName;
-    gameState.fakemakerUnmasked = data.fakemakerUnmasked !== undefined ? data.fakemakerUnmasked : gameState.fakemakerUnmasked;
-    gameState.playerSteps = data.playerSteps || gameState.playerSteps;
-    gameState.questions = data.questions || gameState.questions;
-    gameState.gameStarted = data.gameStarted !== undefined ? data.gameStarted : gameState.gameStarted;
-
-    // Update UI based on game state
-    if (gameState.gameStarted) {
-      // If game has started and we're on role confirmation screen, move to game screen
-      if (document.getElementById("roleConfirmationScreen").classList.contains("active")) {
-        updateGameDisplay();
-        showScreen("gameScreen");
-      } else if (document.getElementById("gameScreen").classList.contains("active")) {
-        // Update game display if we're already on game screen
-        updateGameDisplay();
-      }
-    } else if (document.getElementById("hostGameScreen").classList.contains("active")) {
-      // Update player list if we're on host screen
-      updatePlayerList();
-    }
-  }, (error) => {
-    console.error("Firebase real-time listener error:", error);
-    updateConnectionStatus("offline");
-  });
-
-  // Update connection status
-  const connectedRef = database.ref(".info/connected");
-  connectedRef.on("value", (snap) => {
-    if (snap.val() === true) {
-      console.log("Firebase connection status: Connected");
-      updateConnectionStatus("connected");
+    if (navigator.share) {
+      await navigator.share({
+        title: 'Truth Seekers Game',
+        text: `Join my Truth Seekers game with code: ${gameState.gameCode}`,
+        url: gameUrl
+      });
     } else {
-      console.log("Firebase connection status: Disconnected/Connecting");
-      updateConnectionStatus("connecting");
+      // Fallback to clipboard
+      await navigator.clipboard.writeText(gameUrl);
+      document.getElementById("shareSuccessMessage").textContent = "Game link copied to clipboard!";
+      document.getElementById("shareSuccessMessage").classList.remove("hidden");
+      
+      setTimeout(() => {
+        document.getElementById("shareSuccessMessage").classList.add("hidden");
+      }, 3000);
     }
-  }, (error) => {
-    console.error("Firebase connection listener error:", error);
-    updateConnectionStatus("offline");
-  });
+  } catch (error) {
+    console.error("Error sharing:", error);
+  }
 }
 
-// Stop listening for updates
-function stopListeningForUpdates() {
-  if (!gameState.gameCode) return;
-
-  const gameRef = database.ref(`games/${gameState.gameCode}`);
-  gameRef.off();
-  console.log("Stopped listening for Firebase game updates.");
-
-  const connectedRef = database.ref(".info/connected");
-  connectedRef.off();
-  console.log("Stopped listening for Firebase connection status.");
+// Copy to clipboard
+async function copyToClipboard(text) {
+  try {
+    await navigator.clipboard.writeText(text);
+    alert("Code copied to clipboard!");
+  } catch (error) {
+    console.error("Error copying to clipboard:", error);
+    alert("Could not copy to clipboard");
+  }
 }
 
 // Check for game code in URL
 function checkForGameCodeInURL() {
   const urlParams = new URLSearchParams(window.location.search);
-  const gameCode = urlParams.get("game");
-
+  const gameCode = urlParams.get('game');
+  
   if (gameCode) {
     document.getElementById("gameCodeInput").value = gameCode;
     showScreen("joinGameScreen");
   }
 }
 
-// Share game link
-function shareGame() {
-  if (!gameState.gameCode) return;
-
-  const gameUrl = `${window.location.origin}${window.location.pathname}?game=${gameState.gameCode}`;
-
-  if (navigator.share) {
-    navigator.share({
-      title: "Join my Truth Seekers game!",
-      text: `Join my game with code: ${gameState.gameCode}`,
-      url: gameUrl,
-    })
-    .then(() => {
-      document.getElementById("shareSuccessMessage").textContent = "Game link shared successfully!";
-      document.getElementById("shareSuccessMessage").classList.remove("hidden");
-
-      setTimeout(() => {
-        document.getElementById("shareSuccessMessage").classList.add("hidden");
-      }, 3000);
-    })
-    .catch((error) => {
-      console.error("Error sharing:", error);
+// Firebase functions
+async function saveGameToFirebase() {
+  try {
+    const gameRef = database.ref(`games/${gameState.gameCode}`);
+    await gameRef.set({
+      players: gameState.players,
+      currentPlayerIndex: gameState.currentPlayerIndex,
+      currentQuestionIndex: gameState.currentQuestionIndex,
+      fakemakerName: gameState.fakemakerName,
+      fakemakerUnmasked: gameState.fakemakerUnmasked,
+      playerSteps: gameState.playerSteps,
+      questions: gameState.questions,
+      gameStarted: gameState.gameStarted || false,
+      lastUpdated: Date.now()
     });
+    console.log("Game saved to Firebase successfully");
+  } catch (error) {
+    console.error("Error saving to Firebase:", error);
+    throw error;
+  }
+}
+
+async function loadGameFromFirebase(gameCode) {
+  try {
+    const gameRef = database.ref(`games/${gameCode}`);
+    const snapshot = await gameRef.once('value');
+    const gameData = snapshot.val();
+    console.log("Game loaded from Firebase:", gameData);
+    return gameData;
+  } catch (error) {
+    console.error("Error loading from Firebase:", error);
+    return null;
+  }
+}
+
+function startListeningForUpdates() {
+  if (!gameState.gameCode) return;
+  
+  const gameRef = database.ref(`games/${gameState.gameCode}`);
+  gameRef.on('value', (snapshot) => {
+    const gameData = snapshot.val();
+    if (!gameData) return;
+    
+    // Update connection status
+    updateConnectionStatus(true);
+    
+    // Update game state
+    gameState.players = gameData.players || [];
+    gameState.currentPlayerIndex = gameData.currentPlayerIndex || 0;
+    gameState.currentQuestionIndex = gameData.currentQuestionIndex || 0;
+    gameState.fakemakerName = gameData.fakemakerName || "";
+    gameState.fakemakerUnmasked = gameData.fakemakerUnmasked || false;
+    gameState.playerSteps = gameData.playerSteps || {};
+    gameState.questions = gameData.questions || [];
+    gameState.gameStarted = gameData.gameStarted || false;
+    
+    // Update UI based on current screen
+    const currentScreen = document.querySelector('.screen.active');
+    if (currentScreen) {
+      const screenId = currentScreen.id;
+      
+      if (screenId === 'hostGameScreen') {
+        updatePlayerList();
+      } else if (screenId === 'gameScreen') {
+        updateGameDisplay();
+      } else if (screenId === 'roleConfirmationScreen' && gameState.gameStarted) {
+        // Auto-advance to game screen if game has started
+        updateGameDisplay();
+        showScreen('gameScreen');
+      }
+    }
+  });
+  
+  // Handle connection status
+  const connectedRef = database.ref('.info/connected');
+  connectedRef.on('value', (snapshot) => {
+    updateConnectionStatus(snapshot.val());
+  });
+}
+
+function updateConnectionStatus(connected) {
+  const indicator = document.getElementById('connectionIndicator');
+  const status = document.getElementById('connectionStatus');
+  
+  if (connected) {
+    indicator.className = 'connection-indicator';
+    status.textContent = 'Verbonden';
   } else {
-    copyToClipboard(gameUrl);
-    document.getElementById("shareSuccessMessage").textContent = "Game link copied to clipboard!";
-    document.getElementById("shareSuccessMessage").classList.remove("hidden");
-
-    setTimeout(() => {
-      document.getElementById("shareSuccessMessage").classList.add("hidden");
-    }, 3000);
+    indicator.className = 'connection-indicator offline';
+    status.textContent = 'Offline';
   }
 }
-
-// Copy to clipboard
-function copyToClipboard(text) {
-  const textarea = document.createElement("textarea");
-  textarea.value = text;
-  document.body.appendChild(textarea);
-  textarea.select();
-  document.execCommand("copy");
-  document.body.removeChild(textarea);
-}
-
-// Update connection status indicator
-function updateConnectionStatus(status) {
-  const indicator = document.getElementById("connectionIndicator");
-  const statusText = document.getElementById("connectionStatus");
-
-  if (!indicator || !statusText) return;
-
-  indicator.classList.remove("connected", "connecting", "offline");
-
-  switch (status) {
-    case "connected":
-      indicator.classList.add("connected");
-      statusText.textContent = "Verbonden";
-      break;
-    case "connecting":
-      indicator.classList.add("connecting");
-      statusText.textContent = "Verbinden...";
-      break;
-    case "offline":
-      indicator.classList.add("offline");
-      statusText.textContent = "Offline";
-      break;
-    default:
-      indicator.classList.add("offline");
-      statusText.textContent = "Onbekend";
-  }
-}
-
-
-
-
-
-// AR Functionality
-let arCurrentIndex = 0;
-const arModels = [
-  { primitive: "box", color: "red", scale: "1 1 1" },
-  { primitive: "sphere", color: "blue", scale: "1 1 1" },
-  { primitive: "cone", color: "green", scale: "1 1 1" }
-];
-
-function changeArModel() {
-  const arObject = document.getElementById("dynamicObject");
-  if (arObject) { // Check if the AR object exists on the current screen
-    const model = arModels[arCurrentIndex];
-    arObject.setAttribute("geometry", `primitive: ${model.primitive}`);
-    arObject.setAttribute("material", `color: ${model.color}`);
-    arObject.setAttribute("scale", model.scale);
-    arCurrentIndex = (arCurrentIndex + 1) % arModels.length;
-  }
-}
-
-// Function to initialize AR when the AR screen is shown
-function initializeAR() {
-    const marker = document.querySelector("a-marker");
-    if (marker) {
-        marker.addEventListener("markerFound", () => {
-            console.log("Marker found, changing AR model.");
-            changeArModel();
-        });
-    } else {
-        console.log("AR Marker not found on this screen.");
-    }
-}
-
-// Modify the DOMContentLoaded event listener to include AR button
-document.addEventListener("DOMContentLoaded", async () => {
-    // ... (existing game initialization code) ...
-
-    // Add event listener for the AR button
-    const goToARBtn = document.getElementById("goToARBtn");
-    if (goToARBtn) {
-        goToARBtn.addEventListener("click", () => {
-            showScreen("arScreen");
-            initializeAR(); // Initialize AR when switching to the AR screen
-        });
-    }
-});
-
 
