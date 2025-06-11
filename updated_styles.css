@@ -450,94 +450,96 @@ button:disabled {
     }
 }
 
-
-/* AR Camera Icon and Container Styles */
-.ar-camera-toggle-button {
+/* AR View Overlay Styles */
+.ar-view-overlay {
+    display: none; /* Hidden by default */
     position: fixed;
-    bottom: 80px;
-    right: 20px;
-    width: 60px;
-    height: 60px;
-    border-radius: 50%;
-    background-color: #4CAF50;
-    color: white;
-    font-size: 24px;
-    border: none;
-    cursor: pointer;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-    transition: all 0.3s ease;
-    z-index: 1000;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-
-.ar-camera-toggle-button:hover {
-    background-color: #45a049;
-    transform: scale(1.1);
-}
-
-.ar-camera-toggle-button:active {
-    transform: scale(0.95);
-}
-
-.ar-container {
-    position: fixed;
-    bottom: 150px;
-    right: 20px;
-    width: 300px;
-    height: 200px;
-    border-radius: 15px;
-    overflow: hidden;
-    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
-    border: 3px solid #4CAF50;
-    background-color: #000;
-    z-index: 999;
-    transition: all 0.3s ease;
-}
-
-.ar-container.hidden {
-    display: none;
-}
-
-.ar-container a-scene {
+    top: 0;
+    left: 0;
     width: 100%;
-    height: 100%;
-    border-radius: 12px;
+    height: auto; /* Adjusted by content, or set fixed like 280px */
+    min-height: 220px; /* Minimum height to accommodate camera and buttons */
+    background-color: rgba(30, 30, 30, 0.85); /* Darker semi-transparent background */
+    border-bottom: 2px solid #ff6b6b;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+    z-index: 1000;  /* Ensure it's on top of other content */
+    /* overflow: hidden; /* Can be problematic with fixed height a-scene, manage carefully */
+    display: flex; /* Use flexbox */
+    flex-direction: column;
+    align-items: center;
+    padding: 10px;
+    box-sizing: border-box;
 }
 
-/* Responsive adjustments for AR elements */
-@media (max-width: 768px) {
-    .ar-camera-toggle-button {
-        width: 50px;
-        height: 50px;
-        font-size: 20px;
-        bottom: 70px;
-        right: 15px;
-    }
-    
-    .ar-container {
-        width: 250px;
-        height: 160px;
-        bottom: 130px;
-        right: 15px;
-    }
+.ar-view-overlay.active {
+    display: flex; /* Show when active */
+    animation: fadeIn 0.3s ease-out; /* Smooth appearance */
 }
 
-@media (max-width: 480px) {
-    .ar-camera-toggle-button {
-        width: 45px;
-        height: 45px;
-        font-size: 18px;
-        bottom: 60px;
-        right: 10px;
-    }
-    
-    .ar-container {
-        width: 200px;
-        height: 130px;
-        bottom: 110px;
-        right: 10px;
-    }
+/* Style for the dynamically added a-scene */
+#arViewContainer > a-scene {
+    width: 80%; /* Or a fixed width */
+    max-width: 350px; /* Max width for the camera view */
+    height: 150px; /* Fixed height for the camera view part */
+    display: block;
+    margin-bottom: 10px; /* Space between camera view and buttons */
+    border: 1px solid #444; /* Optional border for the scene itself */
 }
 
+.ar-close-button {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    background: #ff6b6b; /* Red, matching theme */
+    color: white;
+    border: none;
+    border-radius: 50%;
+    width: 30px;
+    height: 30px;
+    font-size: 20px;
+    line-height: 30px; /* Center the '×' */
+    text-align: center;
+    cursor: pointer;
+    z-index: 1001; /* Above the a-scene */
+    box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+}
+
+/* Container for buttons within the AR overlay */
+.ar-overlay-buttons {
+    display: flex;
+    justify-content: center;
+    gap: 15px;
+    width: 100%;
+    margin-top: 5px; /* Space above buttons if a-scene is above */
+}
+
+.ar-overlay-buttons .answer-button {
+    padding: 10px 20px; /* Slightly smaller padding for these buttons */
+}
+
+/* Global AR Button Styles */
+.global-ar-button {
+    position: fixed;
+    top: 20px; /* Adjust as needed */
+    right: 20px; /* Adjust as needed */
+    background-color: #ff6b6b; /* Or your preferred color */
+    color: white;
+    padding: 10px 15px;
+    border-radius: 50px; /* Match other buttons */
+    font-size: 0.9rem; /* Adjust as needed */
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    z-index: 990; /* Below AR overlay, above connection status if they overlap */
+}
+
+/* Ensure A-Frame canvas stays within its container */
+#arViewContainer a-scene canvas {
+    width: 100% !important;
+    height: 100% !important;
+    image-rendering: -moz-crisp-edges; /* Firefox */
+    image-rendering: -webkit-crisp-edges; /* Webkit (Chrome, Safari) */
+    image-rendering: pixelated; /* Nieuwere standaard, geeft scherpe pixels */
+    image-rendering: crisp-edges; /* Algemeen fallback voor scherpe randen */
+}
