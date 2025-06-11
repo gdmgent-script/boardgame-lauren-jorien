@@ -215,8 +215,8 @@ async function createGame() {
     // Display game code
     document.getElementById("gameCodeDisplay").textContent = gameState.gameCode;
 
-    // The Firebase listener will now handle showing the "roleCodeScreen"
-    // based on the activeScreen property saved to Firebase.
+    // Since activeScreen is no longer synced via Firebase, show the screen locally
+    showScreen("roleCodeScreen");
   } catch (error) {
     console.error("Error creating game:", error);
     gameState.activeScreen = "startScreen"; // Revert on error
@@ -775,7 +775,7 @@ async function saveGameToFirebase() {
     playerSteps: gameState.playerSteps || {},
     questions: gameState.questions || [],
     gameStarted: gameState.gameStarted === true,
-    activeScreen: gameState.activeScreen || "gameScreen",
+    // Remove activeScreen from Firebase sync - each player manages their own screen
     lastResult: gameState.lastResult || { title: "", message: "" },
     lastUpdated: firebase.database.ServerValue.TIMESTAMP,
     gameEnded: gameState.gameEnded === true,
@@ -834,19 +834,18 @@ function startListeningForUpdates() {
     gameState.lastResult = data.lastResult || gameState.lastResult;
     gameState.gameEnded = data.gameEnded !== undefined ? data.gameEnded : gameState.gameEnded;
 
-    // Only update activeScreen if it's a significant game state change (like game starting)
-    // Don't override local screen state for individual player flows
-    if (data.gameStarted && gameState.gameStarted) {
+    // Handle game-wide screen changes only
+    if (data.gameStarted && gameState.gameStarted && gameState.activeScreen !== "gameScreen") {
+      // Game has started - move all players to game screen
       gameState.activeScreen = "gameScreen";
-    } else if (data.activeScreen && (data.activeScreen === "questionScreen" || data.activeScreen === "resultScreen")) {
-      // Allow question and result screens to be synchronized across all players
-      gameState.activeScreen = data.activeScreen;
+      showScreen("gameScreen");
     }
-    // For other screens (roleCodeScreen, hostGameScreen, etc.), keep local state
+    // Note: activeScreen is no longer synced from Firebase for individual player flows
+    // Each player manages their own screen state locally
 
-    // Update UI based on game state
+    // Update UI based on current local screen state
     if (gameState.activeScreen && document.getElementById(gameState.activeScreen)) {
-      showScreen(gameState.activeScreen); // This just makes the screen div visible
+      // Only update the current screen's content, don't change screens
 
       // Now, specific rendering/logic for each screen
       switch (gameState.activeScreen) {
