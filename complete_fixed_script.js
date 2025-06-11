@@ -380,7 +380,11 @@ function continueAfterRole() {
 async function startGame() {
   // Only the host can start the game
   const currentPlayer = gameState.players.find(p => p.name === gameState.playerName);
-  if (!currentPlayer || !currentPlayer.isHost) return;
+  if (!currentPlayer || !currentPlayer.isHost) {
+    console.warn("startGame called by non-host or currentPlayer not found. PlayerName:", gameState.playerName, "Players:", gameState.players);
+    alert("Alleen de host kan het spel starten.");
+    return;
+  }
 
   // Require at least 2 players (host + 1)
   if (gameState.players.length < 2) {
@@ -388,14 +392,38 @@ async function startGame() {
     return;
   }
 
+  const startBtn = document.getElementById("startGameBtn");
+  if (startBtn) {
+    startBtn.disabled = true;
+    startBtn.textContent = "Spel starten...";
+  }
+
   gameState.gameStarted = true;
   gameState.currentPlayerIndex = 0;
   gameState.currentQuestionIndex = 0;
   gameState.activeScreen = "gameScreen";
 
-  await saveGameToFirebase();
-  showScreen("gameScreen");
-  updateGameDisplay();
+  try {
+    console.log("Attempting to save game state to Firebase to start game...");
+    await saveGameToFirebase(); // This will trigger listeners on all clients
+    console.log("Game state saved to Firebase. Host will now transition to gameScreen.");
+    // Host transitions locally. Other clients will transition via Firebase listener.
+    showScreen("gameScreen"); 
+    updateGameDisplay(); 
+  } catch (error) {
+    console.error("Error starting game (saving to Firebase):", error);
+    alert("Fout bij het starten van het spel. Controleer de verbinding en probeer het opnieuw.");
+    
+    // Revert gameStarted state if save failed
+    gameState.gameStarted = false;
+    // Consider reverting activeScreen for the host if the save failed, e.g., back to "hostGameScreen"
+    // gameState.activeScreen = "hostGameScreen";
+
+    if (startBtn) {
+      startBtn.disabled = gameState.players.length < 2; // Re-evaluate based on player count
+      startBtn.textContent = "Spel Starten";
+    }
+  }
 }
 
 // Show current question
@@ -635,7 +663,8 @@ function updatePlayerList() {
   // Enable "Spel Starten" if at least 2 players
   const startBtn = document.getElementById("startGameBtn");
   if (startBtn) {
-    startBtn.disabled = gameState.players.length < 2;
+    // Disable if game has started or not enough players
+    startBtn.disabled = gameState.gameStarted || gameState.players.length < 2;
   }
 }
 
@@ -728,11 +757,21 @@ function startListeningForUpdates() {
         gameStarted: data.gameStarted || false,
       });
 
-      // Always update the screen for all players
-      if (data.activeScreen) {
+      // Update UI based on active screen
+      const currentVisibleScreen = document.querySelector('.screen.active');
+      if (data.activeScreen && data.activeScreen !== gameState.activeScreen) {
+        console.log(`Listener: Active screen in Firebase (${data.activeScreen}) differs from local state (${gameState.activeScreen}). Updating.`);
         gameState.activeScreen = data.activeScreen;
         showScreen(data.activeScreen);
+      } else if (data.activeScreen && data.activeScreen === gameState.activeScreen) {
+        // Local state matches Firebase, but ensure DOM is also in sync.
+        if (!currentVisibleScreen || currentVisibleScreen.id !== data.activeScreen) {
+          console.log(`Listener: Firebase screen (${data.activeScreen}) matches local state, but DOM is out of sync (current: ${currentVisibleScreen?.id}). Forcing showScreen.`);
+          showScreen(data.activeScreen);
+        }
       }
+      // If data.activeScreen is null/undefined, we don't change the screen.
+      // This could be an issue if the game data becomes corrupted or is deleted from Firebase.
 
       // Update displays
       updatePlayerList();
@@ -759,4 +798,3 @@ function updateConnectionStatus(connected) {
     }
   }
 }
-
