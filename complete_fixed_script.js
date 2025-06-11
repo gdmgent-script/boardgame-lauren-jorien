@@ -495,8 +495,8 @@ function continueAfterRole() {
 
   if (isHost) {
     gameState.activeScreen = "hostGameScreen";
-    // updatePlayerList(); // This will be handled by Firebase listener
-    // showScreen("hostGameScreen"); // This will be handled by Firebase listener
+    showScreen("hostGameScreen"); // Direct screen update for host
+    // updatePlayerList(); // Can be called here for immediate effect, or rely on Firebase listener
     saveGameToFirebase(); // Ensure state change is saved
   } else {
     // Check if game has already started
