@@ -86,10 +86,23 @@
     </div>
 
     <!-- AR Container -->
-    <div id="arViewContainer">
-        <button id="closeScanner">Sluiten</button>
-        <div id="arSceneContainer"></div>
+    <div id="arViewContainer" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 9999; background: rgba(0,0,0,0.8);">
+    <button id="closeScanner" style="position: absolute; top: 10px; right: 10px; z-index: 10000; background: red; color: white; padding: 10px; border: none;">Sluiten</button>
+
+    <a-scene
+        embedded
+        arjs="sourceType: webcam;"
+        vr-mode-ui="enabled: false"
+        renderer="logarithmicDepthBuffer: true;"
+        id="arScene"
+    >
+        <a-marker preset="hiro">
+            <a-box position="0 0.5 0" material="color: blue;"></a-box>
+        </a-marker>
+        <a-entity camera></a-entity>
+    </a-scene>
     </div>
+
 
     <!-- Globale AR-knop indien nodig -->
     <button id="globalScanHiroBtn" class="global-ar-button hidden">scan Hiro</button>
