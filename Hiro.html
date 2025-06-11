@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hiro Marker Scanner</title>
+    <script src="https://aframe.io/releases/1.2.0/aframe.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/ar.js@1.7.2/aframe/build/aframe-ar.min.js"></script>
+    <style>
+        body { text-align: center; font-family: Arial, sans-serif; }
+        #scannerContainer { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.8); }
+        #closeScanner { position: absolute; top: 10px; right: 10px; padding: 10px; background: red; color: white; border: none; cursor: pointer; }
+    </style>
+</head>
+<body>
+    <h1>Scan een Hiro marker</h1>
+    <button id="openScanner">Open Camera</button>
+
+    <button class="corner-button" onclick="window.location.href='index.html';">Keer terug</button>
+
+    <div id="scannerContainer">
+        <button id="closeScanner">Sluiten</button>
+        <div id="arSceneContainer"></div>
+    </div>
+
+    <script>
+        document.getElementById('openScanner').addEventListener('click', function() {
+            document.getElementById('scannerContainer').style.display = 'block';
+
+            let arScene = document.createElement('a-scene');
+            arScene.setAttribute('embedded', '');
+            arScene.setAttribute('arjs', '');
+
+            let marker = document.createElement('a-marker');
+            marker.setAttribute('preset', 'hiro');
+
+            let box = document.createElement('a-box');
+            box.setAttribute('position', '0 0.5 0');
+            box.setAttribute('material', 'color: blue');
+
+            marker.appendChild(box);
+            arScene.appendChild(marker);
+
+            let camera = document.createElement('a-entity');
+            camera.setAttribute('camera', '');
+            arScene.appendChild(camera);
+
+            document.getElementById('arSceneContainer').appendChild(arScene);
+        });
+
+        document.getElementById('closeScanner').addEventListener('click', function() {
+            // In plaats van AR.js handmatig te sluiten, herladen we de pagina volledig
+            location.reload();
+        });
+    </script>
+</body>
+</html>
