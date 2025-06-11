@@ -151,41 +151,17 @@ function shuffleQuestions() {
 
 // Initialize
 document.addEventListener("DOMContentLoaded", async () => {
-  // Load questions
   try {
     const response = await fetch("questions.json");
     if (!response.ok) {
-      // Instead of throwing an error, create a default question with VIDEO1.mp4
-      console.log("Questions file not found, creating default video question");
+      console.error("Questions file not found or could not be loaded.");
       gameState.questions = [];
     } else {
       gameState.questions = await response.json();
     }
-
-    // Add video question (replacing the image question)
-    gameState.questions = [
-      {
-        id: 1,
-        type: "video",
-        content: "Is deze video echt of nep?",
-        answer: false, // "fake" is false
-        videoUrl: "VIDEO1.mp4",
-      },
-    ];
-
-    // No need to shuffle with just one question
   } catch (error) {
     console.error("Error loading questions:", error);
-    // Remove the alert that was causing startup error
-    gameState.questions = [
-      {
-        id: 1,
-        type: "video",
-        content: "Is deze video echt of nep?",
-        answer: false, // "fake" is false
-        videoUrl: "VIDEO1.mp4",
-      },
-    ];
+    gameState.questions = [];
   }
 
   // Set up event listeners
@@ -486,6 +462,10 @@ async function startGame() {
     gameState.gameStarted = true;
     gameState.activeScreen = "gameScreen"; // Transition all players to the game screen
 
+    // Shuffle questions once at the start of the game
+    shuffleQuestions();
+    gameState.currentQuestionIndex = 0;
+
     // Save to Firebase
     console.log("Attempting to save game start to Firebase:", gameState.gameCode);
     await saveGameToFirebase();
@@ -703,11 +683,11 @@ async function submitAnswer(answer) {
 
   if (isCorrect) {
     document.getElementById("resultTitle").textContent = "Correct!";
-    stepChange = 1;
-    resultMessage = `${gameState.playerName} gaat 1 stap vooruit.`;
+    stepChange = 0; // Geen stap vooruit!
+    resultMessage = `${gameState.playerName} blijft op dezelfde plek.`;
   } else {
     document.getElementById("resultTitle").textContent = "Wrong!";
-    stepChange = -Math.floor(Math.random() * 5) - 1; // -1 to -5 steps
+    stepChange = -Math.floor(Math.random() * 5) - 1; // -1 tot -5 stappen achteruit
     resultMessage = `${gameState.playerName} gaat ${Math.abs(stepChange)} stap(pen) achteruit.`;
   }
 
@@ -752,27 +732,20 @@ async function nextTurn() {
     gameState.currentPlayerIndex + 1
   ) % gameState.players.length;
 
-  // Move to next question if we've gone through all players
+  // Na elke ronde (als iedereen geweest is), ga naar de volgende vraag
   if (gameState.currentPlayerIndex === 0) {
     gameState.currentQuestionIndex++;
-    // LOOPING QUESTIONS: If out of questions, loop back to the first one.
     if (gameState.currentQuestionIndex >= gameState.questions.length) {
-      gameState.currentQuestionIndex = 0; 
-      // Note: An actual win condition (e.g. score, unmasking) would call endGame()
-      // and potentially override this loop. For now, we always loop.
+      gameState.currentQuestionIndex = 0; // Of: endGame() als je wilt stoppen
     }
   }
 
-  gameState.activeScreen = "gameScreen"; // Transition to game screen for next turn
+  gameState.activeScreen = "gameScreen";
 
   // Save to Firebase
   try {
-    console.log("Attempting to save next turn to Firebase:", gameState.gameCode);
     await saveGameToFirebase();
-    // Firebase listener will handle UI updates for all clients
-
   } catch (error) {
-    console.error("Error updating turn:", error);
     alert("Error updating turn. Please try again.");
   }
 }
