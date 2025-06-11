@@ -72,9 +72,11 @@ p {
 /* Button Styles */
 .button-container {
     display: flex;
-    flex-direction: column;
+    flex-direction: row;
     gap: 15px;
     margin-top: 30px;
+    justify-content: center;
+    flex-wrap: wrap;
 }
 
 button {
@@ -442,11 +444,63 @@ button:disabled {
 @media (hover: none) {
     button {
         padding: 15px 30px;
+        min-height: 44px; /* iOS recommended minimum touch target size */
+        font-size: 16px; /* Prevents zoom on iOS */
     }
     
     .input-field {
         padding: 15px 20px;
         font-size: 16px; /* Prevents zoom on iOS */
+        min-height: 44px; /* iOS recommended minimum touch target size */
+    }
+    
+    .answer-button {
+        min-height: 50px; /* Larger touch targets for game buttons */
+        padding: 15px 25px;
+    }
+}
+
+/* iPhone specific optimizations */
+@supports (-webkit-touch-callout: none) {
+    /* iOS Safari specific styles */
+    body {
+        -webkit-touch-callout: none;
+        -webkit-user-select: none;
+        -webkit-tap-highlight-color: transparent;
+    }
+    
+    button {
+        -webkit-appearance: none;
+        border-radius: 50px;
+    }
+    
+    .input-field {
+        -webkit-appearance: none;
+        border-radius: 50px;
+    }
+}
+
+/* Improved button container for mobile */
+@media (max-width: 480px) {
+    .button-container {
+        flex-direction: column;
+        gap: 12px;
+    }
+    
+    .button-container button {
+        width: 100%;
+        min-height: 50px;
+    }
+    
+    /* Game screen button layout */
+    #yourTurnInfo div {
+        flex-direction: column !important;
+        gap: 12px !important;
+    }
+    
+    #yourTurnInfo button {
+        width: 100%;
+        min-height: 50px;
     }
 }
 
