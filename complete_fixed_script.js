@@ -1,3 +1,69 @@
+// Conceptual code for loading and selecting questions from a JSON file
+
+/**
+ * Asynchronously loads questions from a given file path.
+ * @param {string} filePath - The path to the JSON file.
+ * @returns {Promise<Array<Object>>} A promise that resolves to an array of question objects.
+ */
+async function loadAllQuestions(filePath) {
+  try {
+    const response = await fetch(filePath);
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status} for path: ${filePath}`);
+    }
+    const questions = await response.json();
+    return questions;
+  } catch (error) {
+    console.error("Could not load questions:", error);
+    return []; // Return an empty array in case of an error
+  }
+}
+
+/**
+ * Selects a question from an array of questions.
+ * @param {Array<Object>} questionsArray - The array of question objects.
+ * @param {string} [strategy='random'] - The selection strategy ('random', 'sequential', etc.).
+ * @returns {Object|null} A question object or null if the array is empty.
+ */
+function getNextQuestion(questionsArray, strategy = 'random') {
+  if (!questionsArray || questionsArray.length === 0) {
+    return null;
+  }
+
+  if (strategy === 'random') {
+    const randomIndex = Math.floor(Math.random() * questionsArray.length);
+    return questionsArray[randomIndex];
+  }
+  // Implement other strategies (e.g., sequential) as needed
+  // Defaulting to random for simplicity if strategy is unknown
+  const randomIndex = Math.floor(Math.random() * questionsArray.length);
+  return questionsArray[randomIndex];
+}
+
+// --- Example Usage ---
+// This part demonstrates how you might use the functions.
+// Ensure the filePath is correct and accessible from where this script runs.
+/*
+async function initializeAndDisplayQuestion() {
+  const filePath = '/Users/laurenmoreels/Desktop/bordspel-beste tot nu toe/questions.json';
+  const allQuestions = await loadAllQuestions(filePath);
+
+  if (allQuestions.length > 0) {
+    const currentQuestion = getNextQuestion(allQuestions, 'random');
+    if (currentQuestion) {
+      console.log("Selected Question:", currentQuestion);
+      // Here, you would add logic to display the question in your application
+    } else {
+      console.log("No question could be selected.");
+    }
+  } else {
+    console.log("No questions were loaded. Check the file path and content.");
+  }
+}
+
+// To run the example:
+// initializeAndDisplayQuestion();
+*/
 // Voorbeeld voor backFromHostBtn
 const backFromHostBtn = document.getElementById('backFromHostBtn');
 if (backFromHostBtn) {
