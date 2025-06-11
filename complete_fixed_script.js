@@ -204,19 +204,19 @@ async function createGame() {
   gameState.playerSteps[hostName] = 0;
 
   try {
+    gameState.activeScreen = "roleCodeScreen"; // Host proceeds to role code screen
+
     // Save game to Firebase
     console.log("Attempting to save new game to Firebase:", gameState.gameCode);
     await saveGameToFirebase();
 
     // Start listening for updates (if not already started)
     startListeningForUpdates();
-
-  gameState.activeScreen = "roleCodeScreen"; // Host proceeds to role code screen
     // Display game code
     document.getElementById("gameCodeDisplay").textContent = gameState.gameCode;
 
-    // Modified: Direct host to role code screen instead of host game screen
-    showScreen("roleCodeScreen");
+    // The Firebase listener will now handle showing the "roleCodeScreen"
+    // based on the activeScreen property saved to Firebase.
   } catch (error) {
     console.error("Error creating game:", error);
     gameState.activeScreen = "startScreen"; // Revert on error
