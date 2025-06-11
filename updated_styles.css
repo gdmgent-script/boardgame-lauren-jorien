@@ -350,6 +350,45 @@ button:disabled {
     animation: blink 1s infinite;
 }
 
+/* Camera Controls and Container Styles */
+.camera-controls {
+    margin: 20px 0;
+    display: flex;
+    justify-content: center;
+    gap: 15px;
+}
+
+.camera-container {
+    margin: 20px auto;
+    padding: 15px;
+    background-color: rgba(0, 0, 0, 0.3);
+    border-radius: 15px;
+    border: 2px solid rgba(255, 255, 255, 0.2);
+    width: fit-content;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+}
+
+.camera-container a-scene {
+    border-radius: 10px;
+    overflow: hidden;
+    display: block;
+    margin: 0 auto;
+}
+
+/* AR Screen specific styles */
+#arScreen {
+    text-align: center;
+}
+
+#arScreen h1 {
+    margin-bottom: 15px;
+}
+
+#arScreen p {
+    margin-bottom: 20px;
+    font-size: 1.1rem;
+}
+
 /* Animations */
 @keyframes fadeIn {
     from { opacity: 0; transform: translateY(20px); }
@@ -392,6 +431,16 @@ button:disabled {
     .answer-button {
         padding: 12px 24px;
         font-size: 1rem;
+    }
+    
+    .camera-controls {
+        flex-direction: column;
+        align-items: center;
+    }
+    
+    .camera-container a-scene {
+        width: 250px !important;
+        height: 167px !important;
     }
 }
 
@@ -436,6 +485,11 @@ button:disabled {
         padding: 5px 10px;
         font-size: 0.8rem;
     }
+    
+    .camera-container a-scene {
+        width: 200px !important;
+        height: 133px !important;
+    }
 }
 
 /* Touch Optimizations */
@@ -450,96 +504,3 @@ button:disabled {
     }
 }
 
-/* AR View Overlay Styles */
-.ar-view-overlay {
-    display: none; /* Hidden by default */
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: auto; /* Adjusted by content, or set fixed like 280px */
-    min-height: 220px; /* Minimum height to accommodate camera and buttons */
-    background-color: rgba(30, 30, 30, 0.85); /* Darker semi-transparent background */
-    border-bottom: 2px solid #ff6b6b;
-    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
-    z-index: 1000;  /* Ensure it's on top of other content */
-    /* overflow: hidden; /* Can be problematic with fixed height a-scene, manage carefully */
-    display: flex; /* Use flexbox */
-    flex-direction: column;
-    align-items: center;
-    padding: 10px;
-    box-sizing: border-box;
-}
-
-.ar-view-overlay.active {
-    display: flex; /* Show when active */
-    animation: fadeIn 0.3s ease-out; /* Smooth appearance */
-}
-
-/* Style for the dynamically added a-scene */
-#arViewContainer > a-scene {
-    width: 80%; /* Or a fixed width */
-    max-width: 350px; /* Max width for the camera view */
-    height: 150px; /* Fixed height for the camera view part */
-    display: block;
-    margin-bottom: 10px; /* Space between camera view and buttons */
-    border: 1px solid #444; /* Optional border for the scene itself */
-}
-
-.ar-close-button {
-    position: absolute;
-    top: 8px;
-    right: 8px;
-    background: #ff6b6b; /* Red, matching theme */
-    color: white;
-    border: none;
-    border-radius: 50%;
-    width: 30px;
-    height: 30px;
-    font-size: 20px;
-    line-height: 30px; /* Center the '×' */
-    text-align: center;
-    cursor: pointer;
-    z-index: 1001; /* Above the a-scene */
-    box-shadow: 0 2px 5px rgba(0,0,0,0.2);
-}
-
-/* Container for buttons within the AR overlay */
-.ar-overlay-buttons {
-    display: flex;
-    justify-content: center;
-    gap: 15px;
-    width: 100%;
-    margin-top: 5px; /* Space above buttons if a-scene is above */
-}
-
-.ar-overlay-buttons .answer-button {
-    padding: 10px 20px; /* Slightly smaller padding for these buttons */
-}
-
-/* Global AR Button Styles */
-.global-ar-button {
-    position: fixed;
-    top: 20px; /* Adjust as needed */
-    right: 20px; /* Adjust as needed */
-    background-color: #ff6b6b; /* Or your preferred color */
-    color: white;
-    padding: 10px 15px;
-    border-radius: 50px; /* Match other buttons */
-    font-size: 0.9rem; /* Adjust as needed */
-    font-weight: bold;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
-    z-index: 990; /* Below AR overlay, above connection status if they overlap */
-}
-
-/* Ensure A-Frame canvas stays within its container */
-#arViewContainer a-scene canvas {
-    width: 100% !important;
-    height: 100% !important;
-    image-rendering: -moz-crisp-edges; /* Firefox */
-    image-rendering: -webkit-crisp-edges; /* Webkit (Chrome, Safari) */
-    image-rendering: pixelated; /* Nieuwere standaard, geeft scherpe pixels */
-    image-rendering: crisp-edges; /* Algemeen fallback voor scherpe randen */
-}
