@@ -487,7 +487,7 @@ async function submitRoleCode() {
 }
 
 // Continue after role assignment
-function continueAfterRole() {
+async function continueAfterRole() { // Make the function async
   // If player is host, go to host screen
   const isHost = gameState.players.find(
     (p) => p.name === gameState.playerName
@@ -495,23 +495,39 @@ function continueAfterRole() {
 
   if (isHost) {
     gameState.activeScreen = "hostGameScreen";
-    showScreen("hostGameScreen"); // Direct screen update for host
-    // updatePlayerList(); // Can be called here for immediate effect, or rely on Firebase listener
-    saveGameToFirebase(); // Ensure state change is saved
-  } else {
-    // Check if game has already started
+    showScreen("hostGameScreen"); // Show immediately for host responsiveness
+    console.log("Host continuing to hostGameScreen, saving to Firebase...");
+    try {
+      await saveGameToFirebase(); // Await the save operation
+      console.log("Host state (hostGameScreen) saved to Firebase.");
+      // updatePlayerList(); // Firebase listener will handle this via screen switch logic if needed
+    } catch (error) {
+      console.error("Error saving game state in continueAfterRole for host:", error);
+      // Optionally, handle the error, e.g., show a message or revert screen
+    }
+  } else { // Non-host player
+    // Check if game has already started (based on current gameState, which should be updated by Firebase)
     if (gameState.gameStarted) {
       // Game already started, join immediately
       gameState.activeScreen = "gameScreen";
-      // updateGameDisplay(); // Firebase listener
-      // showScreen("gameScreen"); // Firebase listener
-      saveGameToFirebase(); // Ensure state change is saved
+      console.log("Non-host continuing to gameScreen, saving to Firebase...");
+      try {
+        await saveGameToFirebase(); // Await the save operation
+        console.log("Non-host state (gameScreen) saved to Firebase.");
+        // The Firebase listener should pick up "gameScreen" and transition the player.
+        // No direct showScreen() call here to maintain consistency with listener-driven updates.
+      } catch (error) {
+        console.error("Error saving game state in continueAfterRole for non-host:", error);
+      }
     } else {
       // Show waiting screen with clear message
-      document.getElementById("roleInstructions").textContent = 
+      // Player stays on roleConfirmationScreen, but UI is updated.
+      const roleInstructionsElement = document.getElementById("roleInstructions");
+      const continueButton = document.getElementById("continueAfterRoleBtn");
+      if (roleInstructionsElement) roleInstructionsElement.textContent =
         "Waiting for the host to start the game. You will automatically join when the game begins.";
-      // Keep on role confirmation screen but update the UI to show waiting status
-      document.getElementById("continueAfterRoleBtn").style.display = "none";
+      if (continueButton) continueButton.style.display = "none";
+      // No change to gameState.activeScreen needs to be saved here for the waiting player.
     }
   }
 }
