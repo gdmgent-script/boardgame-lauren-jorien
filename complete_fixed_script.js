@@ -730,19 +730,14 @@ async function submitAnswer(answer) {
 
 // Next turn
 async function nextTurn() {
-  // Move to next player
-  gameState.currentPlayerIndex = (
-    gameState.currentPlayerIndex + 1
-  ) % gameState.players.length;
+  // Na het beantwoorden van een vraag, ga naar de volgende speler én de volgende vraag
+  gameState.currentPlayerIndex = (gameState.currentPlayerIndex + 1) % gameState.players.length;
+  gameState.currentQuestionIndex++;
 
-  // Na elke ronde (als iedereen geweest is), ga naar de volgende vraag
-  if (gameState.currentPlayerIndex === 0) {
-    gameState.currentQuestionIndex++;
-    // Stop het spel als alle vragen geweest zijn
-    if (gameState.currentQuestionIndex >= gameState.questions.length) {
-      await endGame();
-      return;
-    }
+  // Stop het spel als alle vragen geweest zijn
+  if (gameState.currentQuestionIndex >= gameState.questions.length) {
+    await endGame();
+    return;
   }
 
   gameState.activeScreen = "gameScreen";
