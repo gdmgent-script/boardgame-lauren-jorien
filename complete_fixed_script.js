@@ -452,8 +452,8 @@ function showQuestion() {
       const button = document.getElementById(`option${index}`);
       if (button) {
         button.textContent = option;
-        button.style.display = "block";
-        button.disabled = !isMyTurn; // <-- Only enable for current player
+        button.style.display = isMyTurn ? "block" : "none"; // Hide if not my turn
+        button.disabled = !isMyTurn; // Still disable, but primarily hidden
       }
     });
     for (let i = question.options.length; i < 4; i++) {
@@ -463,14 +463,18 @@ function showQuestion() {
       }
     }
   } else {
-    document.getElementById("trueFalseButtons").classList.remove("hidden");
+    // For true/false questions
+    if (isMyTurn) {
+      document.getElementById("trueFalseButtons").classList.remove("hidden");
+      document.getElementById("trueBtn").disabled = false;
+      document.getElementById("falseBtn").disabled = false;
+    } else {
+      document.getElementById("trueFalseButtons").classList.add("hidden");
+    }
     document.getElementById("multipleChoiceButtons").classList.add("hidden");
-    // Enable/disable true/false buttons
-    document.getElementById("trueBtn").disabled = !isMyTurn;
-    document.getElementById("falseBtn").disabled = !isMyTurn;
   }
 
-  // Optionally, visually indicate if it's not your turn
+  // Optionally indicate if it's not your turn
   const yourTurnInfo = document.getElementById("yourTurnInfo");
   if (yourTurnInfo) {
     yourTurnInfo.style.display = isMyTurn ? "block" : "none";
@@ -702,16 +706,26 @@ function updateGameDisplay() {
     if (currentPlayerDisplay) {
       currentPlayerDisplay.textContent = currentPlayer.name;
     }
+    
+    // Update current player name in the not-your-turn info
+    const currentPlayerName = document.getElementById("currentPlayerName");
+    if (currentPlayerName) {
+      currentPlayerName.textContent = currentPlayer.name;
+    }
   }
 
   // Show/hide turn info based on current player
   const yourTurnInfo = document.getElementById("yourTurnInfo");
-  if (yourTurnInfo) {
-    if (currentPlayer && currentPlayer.name === gameState.playerName) {
-      yourTurnInfo.style.display = "block";
-    } else {
-      yourTurnInfo.style.display = "none";
-    }
+  const notYourTurnInfo = document.getElementById("notYourTurnInfo");
+  
+  if (currentPlayer && currentPlayer.name === gameState.playerName) {
+    // It's this player's turn
+    if (yourTurnInfo) yourTurnInfo.style.display = "block";
+    if (notYourTurnInfo) notYourTurnInfo.style.display = "none";
+  } else {
+    // It's not this player's turn
+    if (yourTurnInfo) yourTurnInfo.style.display = "none";
+    if (notYourTurnInfo) notYourTurnInfo.style.display = "block";
   }
 }
 

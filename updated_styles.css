@@ -541,3 +541,23 @@ button:disabled {
     }
 }
 
+
+/* Not Your Turn Info */
+.not-your-turn-info {
+    background-color: rgba(255, 193, 7, 0.2);
+    border-radius: 10px;
+    padding: 15px;
+    margin: 20px 0;
+    border: 2px solid #ffc107;
+    text-align: center;
+}
+
+.not-your-turn-info p {
+    margin-bottom: 10px;
+}
+
+.not-your-turn-info .highlight {
+    color: #ffc107;
+    font-weight: bold;
+}
+
