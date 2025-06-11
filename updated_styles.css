@@ -350,45 +350,6 @@ button:disabled {
     animation: blink 1s infinite;
 }
 
-/* Camera Controls and Container Styles */
-.camera-controls {
-    margin: 20px 0;
-    display: flex;
-    justify-content: center;
-    gap: 15px;
-}
-
-.camera-container {
-    margin: 20px auto;
-    padding: 15px;
-    background-color: rgba(0, 0, 0, 0.3);
-    border-radius: 15px;
-    border: 2px solid rgba(255, 255, 255, 0.2);
-    width: fit-content;
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
-}
-
-.camera-container a-scene {
-    border-radius: 10px;
-    overflow: hidden;
-    display: block;
-    margin: 0 auto;
-}
-
-/* AR Screen specific styles */
-#arScreen {
-    text-align: center;
-}
-
-#arScreen h1 {
-    margin-bottom: 15px;
-}
-
-#arScreen p {
-    margin-bottom: 20px;
-    font-size: 1.1rem;
-}
-
 /* Animations */
 @keyframes fadeIn {
     from { opacity: 0; transform: translateY(20px); }
@@ -431,16 +392,6 @@ button:disabled {
     .answer-button {
         padding: 12px 24px;
         font-size: 1rem;
-    }
-    
-    .camera-controls {
-        flex-direction: column;
-        align-items: center;
-    }
-    
-    .camera-container a-scene {
-        width: 250px !important;
-        height: 167px !important;
     }
 }
 
@@ -485,11 +436,6 @@ button:disabled {
         padding: 5px 10px;
         font-size: 0.8rem;
     }
-    
-    .camera-container a-scene {
-        width: 200px !important;
-        height: 133px !important;
-    }
 }
 
 /* Touch Optimizations */
@@ -501,6 +447,97 @@ button:disabled {
     .input-field {
         padding: 15px 20px;
         font-size: 16px; /* Prevents zoom on iOS */
+    }
+}
+
+
+/* AR Camera Icon and Container Styles */
+.ar-camera-toggle-button {
+    position: fixed;
+    bottom: 80px;
+    right: 20px;
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    background-color: #4CAF50;
+    color: white;
+    font-size: 24px;
+    border: none;
+    cursor: pointer;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    transition: all 0.3s ease;
+    z-index: 1000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.ar-camera-toggle-button:hover {
+    background-color: #45a049;
+    transform: scale(1.1);
+}
+
+.ar-camera-toggle-button:active {
+    transform: scale(0.95);
+}
+
+.ar-container {
+    position: fixed;
+    bottom: 150px;
+    right: 20px;
+    width: 300px;
+    height: 200px;
+    border-radius: 15px;
+    overflow: hidden;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+    border: 3px solid #4CAF50;
+    background-color: #000;
+    z-index: 999;
+    transition: all 0.3s ease;
+}
+
+.ar-container.hidden {
+    display: none;
+}
+
+.ar-container a-scene {
+    width: 100%;
+    height: 100%;
+    border-radius: 12px;
+}
+
+/* Responsive adjustments for AR elements */
+@media (max-width: 768px) {
+    .ar-camera-toggle-button {
+        width: 50px;
+        height: 50px;
+        font-size: 20px;
+        bottom: 70px;
+        right: 15px;
+    }
+    
+    .ar-container {
+        width: 250px;
+        height: 160px;
+        bottom: 130px;
+        right: 15px;
+    }
+}
+
+@media (max-width: 480px) {
+    .ar-camera-toggle-button {
+        width: 45px;
+        height: 45px;
+        font-size: 18px;
+        bottom: 60px;
+        right: 10px;
+    }
+    
+    .ar-container {
+        width: 200px;
+        height: 130px;
+        bottom: 110px;
+        right: 10px;
     }
 }
 
