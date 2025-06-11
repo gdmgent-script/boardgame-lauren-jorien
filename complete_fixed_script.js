@@ -335,6 +335,7 @@ async function joinGame() {
     startListeningForUpdates();
 
     // Voor deze toetredende speler, navigeer lokaal naar het rolcodescherm.
+    gameState.activeScreen = "roleCodeScreen";
     showScreen("roleCodeScreen");
   } catch (error) {
     console.error("Error joining game:", error);
@@ -842,7 +843,19 @@ function startListeningForUpdates() {
     gameState.playerSteps = data.playerSteps || gameState.playerSteps;
     gameState.questions = data.questions || gameState.questions;
     gameState.gameStarted = data.gameStarted !== undefined ? data.gameStarted : gameState.gameStarted;
-    gameState.activeScreen = data.activeScreen || gameState.activeScreen; // Keep local if not in Firebase yet
+    // IMPORTANT: Only update activeScreen from Firebase if the game has started or if it's not a joining player being pulled back
+    const isCurrentPlayerHost = gameState.players.find(p => p.name === gameState.playerName)?.isHost;
+    const currentLocalScreen = document.querySelector('.screen.active')?.id;
+
+    if (gameState.gameStarted || isCurrentPlayerHost || (data.activeScreen !== "hostGameScreen" && data.activeScreen !== "startScreen")) {
+        gameState.activeScreen = data.activeScreen || gameState.activeScreen;
+    } else {
+        // If not host, game not started, and Firebase activeScreen is hostGameScreen/startScreen,
+        // then don't update local activeScreen from Firebase.
+        // Keep the current local screen (roleCodeScreen or roleConfirmationScreen)
+        console.log(`Preventing screen switch for joining player. Firebase activeScreen: ${data.activeScreen}, Local activeScreen: ${currentLocalScreen}`);
+        // Do not update gameState.activeScreen from data.activeScreen in this specific case
+    }
     gameState.lastResult = data.lastResult || gameState.lastResult;
     gameState.gameEnded = data.gameEnded !== undefined ? data.gameEnded : gameState.gameEnded;
 
