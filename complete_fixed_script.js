@@ -542,6 +542,10 @@ async function processAnswer(isCorrect, playerAnswer) {
     // Update player steps
     const currentPlayer = gameState.players.find(p => p.name === gameState.playerName);
     if (currentPlayer) {
+      // Ensure playerSteps object is initialized for the player
+      if (gameState.playerSteps[gameState.playerName] === undefined) {
+        gameState.playerSteps[gameState.playerName] = 0;
+      }
       if (isCorrect) {
         currentPlayer.steps += 1;
         gameState.playerSteps[gameState.playerName] = currentPlayer.steps;
@@ -550,20 +554,26 @@ async function processAnswer(isCorrect, playerAnswer) {
 
     // Show result
     const resultTitle = isCorrect ? "Correct!" : "Fout!";
-    const resultMessage = isCorrect ? 
-      "Je hebt het juiste antwoord gegeven!" : 
+    const resultMessage = isCorrect ?
+      "Je hebt het juiste antwoord gegeven!" :
       "Helaas, dat was niet het juiste antwoord.";
+
+    gameState.lastResult = { // Store result in gameState for all players
+        title: resultTitle,
+        message: resultMessage,
+        answeredPlayerName: gameState.playerName, // Store who answered
+        wasCorrect: isCorrect, // Store if it was correct
+        stepsAwarded: isCorrect ? 1 : 0
+    };
 
     document.getElementById("resultTitle").textContent = resultTitle;
     document.getElementById("resultMessage").textContent = resultMessage;
     document.getElementById("stepsDisplayResult").textContent = gameState.playerSteps[gameState.playerName] || 0;
-    
     const stepChange = isCorrect ? "+1 stap" : "Geen stappen";
     document.getElementById("stepChange").textContent = stepChange;
 
-    // Save game state
+    gameState.activeScreen = "resultScreen";
     await saveGameToFirebase();
-    
     showScreen("resultScreen");
 
   } catch (error) {
@@ -577,9 +587,17 @@ async function nextTurn() {
   try {
     gameState.currentPlayerIndex = (gameState.currentPlayerIndex + 1) % gameState.players.length;
     gameState.currentQuestionIndex += 1;
-
+    
+    // Check for game end condition
+    if (gameState.currentQuestionIndex >= gameState.questions.length) {
+      gameState.activeScreen = "gameOverScreen"; // TODO: Implement gameOverScreen and its logic
+      // For now, alert and go to a placeholder or end screen if available
+      // alert("Game Over! All questions answered.");
+    } else {
+      gameState.activeScreen = "gameScreen"; // Transition all players to gameScreen for next question
+    }
+    
     await saveGameToFirebase();
-    // Firebase listener will handle screen updates
   } catch (error) {
     console.error("Error moving to next turn:", error);
     alert("Fout bij volgende beurt. Probeer het opnieuw.");
@@ -606,7 +624,7 @@ function resetGame() {
 
   // Shuffle questions again
   shuffleQuestions();
-  
+
   showScreen("startScreen");
 }
 
@@ -748,8 +766,9 @@ async function loadGameFromFirebase(gameCode) {
 
 function startListeningForUpdates() {
   if (!gameState.gameCode) return;
+  const gameRef = database.ref(`games/${gameState.gameCode}`);
   
-  database.ref(`games/${gameState.gameCode}`).on('value', (snapshot) => {
+  gameRef.on('value', (snapshot) => {
     const data = snapshot.val();
     if (data) {
       // Update local game state
@@ -765,26 +784,50 @@ function startListeningForUpdates() {
         gameStarted: data.gameStarted || false,
       });
 
-      // Update UI based on active screen
+      // Determine if the screen needs to be changed or re-rendered
       const currentVisibleScreen = document.querySelector('.screen.active');
-      if (data.activeScreen && data.activeScreen !== gameState.activeScreen) {
-        console.log(`Listener: Active screen in Firebase (${data.activeScreen}) differs from local state (${gameState.activeScreen}). Updating.`);
-        gameState.activeScreen = data.activeScreen;
+      let screenChanged = false;
+      if (data.activeScreen && (!currentVisibleScreen || currentVisibleScreen.id !== data.activeScreen)) {
+        console.log(`Listener: Firebase screen (${data.activeScreen}) requires update. Current visible: ${currentVisibleScreen?.id}.`);
         showScreen(data.activeScreen);
-      } else if (data.activeScreen && data.activeScreen === gameState.activeScreen) {
-        // Local state matches Firebase, but ensure DOM is also in sync.
-        if (!currentVisibleScreen || currentVisibleScreen.id !== data.activeScreen) {
-          console.log(`Listener: Firebase screen (${data.activeScreen}) matches local state, but DOM is out of sync (current: ${currentVisibleScreen?.id}). Forcing showScreen.`);
-          showScreen(data.activeScreen);
-        }
+        screenChanged = true;
       }
-      // If data.activeScreen is null/undefined, we don't change the screen.
-      // This could be an issue if the game data becomes corrupted or is deleted from Firebase.
+
+      // Call specific render functions based on the active screen
+      if (gameState.activeScreen === "questionScreen") {
+        showQuestion(); // This will render question content and set button states
+      } else if (gameState.activeScreen === "resultScreen") {
+        if (gameState.lastResult && gameState.lastResult.title) {
+          document.getElementById("resultTitle").textContent = gameState.lastResult.title;
+          document.getElementById("resultMessage").textContent = gameState.lastResult.message;
+          
+          const answeredPlayerName = gameState.lastResult.answeredPlayerName;
+          if (answeredPlayerName && gameState.playerSteps[answeredPlayerName] !== undefined) {
+            document.getElementById("stepsDisplayResult").textContent = gameState.playerSteps[answeredPlayerName];
+          } else if (answeredPlayerName) {
+             document.getElementById("stepsDisplayResult").textContent = "0"; // Default if steps not found
+          }
+
+          const stepChangeText = gameState.lastResult.wasCorrect ? `+${gameState.lastResult.stepsAwarded} stap` : "Geen stappen";
+          document.getElementById("stepChange").textContent = `${stepChangeText} (voor ${answeredPlayerName || 'speler'})`;
+        }
+      } else if (gameState.activeScreen === "gameOverScreen") {
+        // TODO: Implement logic to display game over screen
+        // For now, it might just show a screen with ID "gameOverScreen"
+        // You might want a function like displayGameOver() here.
+        console.log("Game Over state reached.");
+        // Example: document.getElementById("gameOverMessage").textContent = "Het spel is afgelopen!";
+      }
 
       // Update displays
       updatePlayerList();
       updateGameDisplay();
       updateConnectionStatus(true);
+    } else {
+      // Game data not found or null (e.g., game ended and removed, or invalid code)
+      console.warn("Firebase listener: No data found for game code", gameState.gameCode);
+      updateConnectionStatus(false); // Indicate potential disconnection or issue
+      // Optionally, redirect to start screen or show an error message
     }
   }, (error) => {
     console.error("Firebase listener error:", error);
@@ -803,6 +846,64 @@ function updateConnectionStatus(connected) {
     } else {
       indicator.className = "connection-indicator offline";
       status.textContent = "Verbinding verbroken";
+    }
+  }
+}
+
+// Modify showQuestion to save activeScreen state if called by current player's action
+async function showQuestion() {
+  if (gameState.currentQuestionIndex >= gameState.questions.length) {
+    // This should ideally be caught by nextTurn leading to gameOverScreen
+    // If reached, try to sync to a game over state
+    if (gameState.activeScreen !== "gameOverScreen") {
+        gameState.activeScreen = "gameOverScreen";
+        // await saveGameToFirebase(); // Avoid save loops if listener calls this
+    }
+    showScreen("gameOverScreen"); // Ensure correct screen is shown
+    return;
+  }
+
+  const question = gameState.questions[gameState.currentQuestionIndex];
+  document.getElementById("questionNumber").textContent = `Vraag ${gameState.currentQuestionIndex + 1}`;
+  document.getElementById("questionContent").textContent = question.content;
+
+  const currentPlayer = gameState.players[gameState.currentPlayerIndex];
+  const isMyTurn = currentPlayer && currentPlayer.name === gameState.playerName;
+
+  if (question.type === "multiple_choice") {
+    document.getElementById("trueFalseButtons").classList.add("hidden");
+    document.getElementById("multipleChoiceButtons").classList.remove("hidden");
+    question.options.forEach((option, index) => {
+      const button = document.getElementById(`option${index}`);
+      if (button) { button.textContent = option; button.style.display = "block"; button.disabled = !isMyTurn; }
+    });
+    for (let i = question.options.length; i < 4; i++) {
+      const button = document.getElementById(`option${i}`);
+      if (button) button.style.display = "none";
+    }
+  } else {
+    document.getElementById("trueFalseButtons").classList.remove("hidden");
+    document.getElementById("multipleChoiceButtons").classList.add("hidden");
+    document.getElementById("trueBtn").disabled = !isMyTurn;
+    document.getElementById("falseBtn").disabled = !isMyTurn;
+  }
+  document.getElementById("yourTurnInfo").style.display = isMyTurn ? "block" : "none";
+  handleMediaContent(question);
+
+  const previousScreenForSave = gameState.activeScreen;
+  gameState.activeScreen = "questionScreen"; // Ensure internal state is set
+  showScreen("questionScreen"); // Show the screen
+
+  // If this call is by the current player to reveal the question (transitioning from another screen)
+  // then save this state change to Firebase.
+  if (isMyTurn && previousScreenForSave !== "questionScreen") {
+    try {
+      await saveGameToFirebase();
+    } catch (error) {
+      console.error("Error saving game state after showing question:", error);
+      gameState.activeScreen = previousScreenForSave; // Revert on error
+      showScreen(previousScreenForSave);
+      alert("Kon de vraag niet aan andere spelers tonen. Probeer opnieuw.");
     }
   }
 }
