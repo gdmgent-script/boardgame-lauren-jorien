@@ -203,9 +203,8 @@ async function createGame() {
   gameState.playerSteps[hostName] = 0;
 
   try {
-    // Host does not go to roleCodeScreen immediately. They stay on hostGameScreen.
-    // The role assignment will happen implicitly for the host or can be done later.
-    gameState.activeScreen = "hostGameScreen"; // Host proceeds to host game screen
+    // Host goes to roleCodeScreen to set their role first
+    gameState.activeScreen = "roleCodeScreen"; // Host proceeds to role code screen
 
     // Save game to Firebase
     console.log("Attempting to save new game to Firebase:", gameState.gameCode);
@@ -216,8 +215,8 @@ async function createGame() {
     // Display game code
     document.getElementById("gameCodeDisplay").textContent = gameState.gameCode;
 
-    // Show the host game screen locally for the host
-    showScreen("hostGameScreen");
+    // Show the role code screen locally for the host to set their role
+    showScreen("roleCodeScreen");
   } catch (error) {
     console.error("Error creating game:", error);
     gameState.activeScreen = "startScreen"; // Revert on error
@@ -316,7 +315,7 @@ async function joinGame() {
     // Save updated game state
     console.log("Attempting to save updated game state to Firebase after join:", gameState.gameCode);
     
-    // Don't change activeScreen globally - let each player manage their own screen state
+    // Don't change activeScreen globally when players join - let each player manage their own screen state
     await saveGameToFirebase();
 
     // Start listening for updates
@@ -483,8 +482,11 @@ async function submitRoleCode() {
     // After role confirmation, host goes to hostGameScreen, others wait on roleConfirmationScreen
     const currentPlayer = gameState.players.find(p => p.name === gameState.playerName);
     if (currentPlayer && currentPlayer.isHost) {
+      // Host goes directly to hostGameScreen after setting role
+      gameState.activeScreen = "hostGameScreen";
       showScreen("hostGameScreen");
     } else {
+      // Non-hosts go to roleConfirmationScreen and wait
       showScreen("roleConfirmationScreen");
       document.getElementById("continueAfterRoleBtn").style.display = "none"; // Hide continue button for non-hosts
     }
@@ -718,9 +720,20 @@ function startListeningForUpdates() {
       updatePlayerList(); // For host screen
 
       // Handle screen transitions based on activeScreen from Firebase
+      // But don't force screen changes for hosts who should stay in their lobby
       if (data.activeScreen && data.activeScreen !== gameState.activeScreen) {
-        gameState.activeScreen = data.activeScreen;
-        showScreen(gameState.activeScreen);
+        const currentPlayer = gameState.players.find(p => p.name === gameState.playerName);
+        const isHost = currentPlayer && currentPlayer.isHost;
+        
+        // If host is in hostGameScreen, don't force them to other screens unless game starts
+        if (isHost && gameState.activeScreen === "hostGameScreen" && data.activeScreen !== "gameScreen") {
+          // Host stays in lobby, don't change their screen
+          console.log("Host staying in lobby, not changing screen to:", data.activeScreen);
+        } else {
+          // For non-hosts or when game actually starts, follow the screen changes
+          gameState.activeScreen = data.activeScreen;
+          showScreen(gameState.activeScreen);
+        }
       }
 
       // Update game screen elements
