@@ -5,12 +5,12 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Truth Seekers - CTRL+P</title>
     <link rel="stylesheet" href="updated_styles.css">
+    <!-- A-Frame and AR.js libraries -->
+    <script src="https://aframe.io/releases/1.2.0/aframe.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/ar.js@1.7.2/aframe/build/aframe-ar.min.js"></script>
     <!-- Firebase SDK -->
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
-    <!-- A-Frame and AR.js for AR functionality -->
-    <script src="https://aframe.io/releases/1.2.0/aframe.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/ar.js@1.7.2/aframe/build/aframe-ar.min.js"></script>
 </head>
 <body>
     <div class="container">
@@ -24,7 +24,6 @@
             <div class="button-container">
                 <button id="hostGameBtn" class="primary-button">Spel Hosten</button>
                 <button id="goToJoinBtn" class="secondary-button">Deelnemen</button>
-
             </div>
         </div>
 
@@ -96,8 +95,6 @@
             <div class="game-header">
                 <div class="player-info">
                     <p>Huidige Speler: <span id="currentPlayerDisplay" class="highlight"></span></p>
-                    <p>Jouw Rol: <span id="roleName" class="highlight"></span></p>
-                    <p>Jouw Stappen: <span id="stepsDisplay" class="highlight">0</span></p>
                 </div>
                 <div id="answerInfo" class="answer-info hidden">
                     <p>Juiste Antwoord: <span id="correctAnswer" class="highlight"></span></p>
@@ -106,23 +103,15 @@
             
             <div id="yourTurnInfo" class="your-turn-info">
                 <p>Het is jouw beurt!</p>
-                <button id="showQuestionBtn" class="primary-button">Toon Vraag</button>
+                <div style="display: flex; justify-content: center; align-items: center; gap: 10px;">
+                    <button id="showQuestionBtn" class="primary-button">Toon Vraag</button>
+                    <button id="scanHiroGameBtn" class="secondary-button">Scan Hiro</button>
+                </div>
             </div>
             
             <div class="connection-status">
                 <span id="connectionIndicator" class="connection-indicator"></span>
                 <span id="connectionStatus">Verbonden</span>
-            </div>
-
-            <!-- AR Camera Icon and Container -->
-            <button id="arCameraToggleBtn" class="ar-camera-toggle-button">📷</button>
-            <div id="arContainer" class="ar-container hidden">
-                <a-scene embedded arjs>
-                    <a-marker preset="hiro">
-                        <a-entity id="dynamicObject" position="0 0 0"></a-entity>
-                    </a-marker>
-                    <a-entity camera></a-entity>
-                </a-scene>
             </div>
         </div>
 
@@ -132,12 +121,12 @@
             <p id="questionContent" class="question-content"></p>
             
             <div id="imageContainer" class="media-container hidden">
-                <img id="questionImage" src="" alt="Vraag Afbeelding">
+                <img id="questionImage" src="#" alt="Vraag Afbeelding">
             </div>
             
             <div id="videoContainer" class="media-container hidden">
                 <video id="questionVideo" controls>
-                    <source id="videoSource" src="" type="video/mp4">
+                    <source id="videoSource" src="#" type="video/mp4">
                     Je browser ondersteunt geen video's.
                 </video>
             </div>
@@ -171,9 +160,15 @@
             <button id="newGameBtn" class="secondary-button">Nieuw Spel</button>
         </div>
 
-   </div>
+        <!-- AR View Container (Overlay) -->
+        <div id="arViewContainer" class="ar-view-overlay">
+            <!-- A-Frame scene will be dynamically inserted here by script.js -->
+        </div>
 
-    <script src="script.js"></script>
+        <!-- Global AR Button - Initially hidden -->
+        <button id="globalScanHiroBtn" class="global-ar-button hidden">scan Hiro</button>
+    </div>
+
+    <script src="complete_fixed_script.js"></script>
 </body>
 </html>
-
