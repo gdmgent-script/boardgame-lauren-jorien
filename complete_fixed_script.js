@@ -488,12 +488,6 @@ function updateGameDisplay() {
   // Update current player display
   document.getElementById("currentPlayerDisplay").textContent = currentPlayer.name;
 
-  // Update steps display
-  const steps = gameState.playerSteps[gameState.playerName] || 0;
-  document.getElementById("stepsDisplay").textContent = steps;
-
-  // Hide role name for everyone
-  document.getElementById("roleName").textContent = "Hidden";
 
   // Show answer if player is Fakemaker and not unmasked
   if (gameState.playerRole === "Fakemaker" && !gameState.fakemakerUnmasked) {
