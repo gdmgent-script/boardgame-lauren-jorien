@@ -1,4 +1,4 @@
-/* Truth Seekers Game - Enhanced Script without Firebase */
+/* Truth Seekers Game - Enhanced Script with Firebase */
 
 // Game state
 const gameState = {
@@ -29,6 +29,22 @@ const roleCodes = [
 
 // DOM Elements
 const screens = document.querySelectorAll(".screen");
+
+// Firebase configuration
+const firebaseConfig = {
+  apiKey: "AIzaSyDWuEvMYs1bEZs8OV8TRaILoI_HA2Urx4I",
+  authDomain: "truth-seekers-lauren.firebaseapp.com",
+  databaseURL: "https://truth-seekers-lauren-default-rtdb.europe-west1.firebasedatabase.app",
+  projectId: "truth-seekers-lauren",
+  storageBucket: "truth-seekers-lauren.appspot.com",
+  messagingSenderId: "342706717766",
+  appId: "1:342706717766:web:83349268a19770cd35f647",
+  measurementId: "G-4Q61SPTCF9",
+};
+
+// Initialize Firebase
+firebase.initializeApp(firebaseConfig);
+const database = firebase.database();
 
 // Shuffle questions
 function shuffleQuestions() {
@@ -65,6 +81,9 @@ document.addEventListener("DOMContentLoaded", async () => {
   
   // Check for game code in URL
   checkForGameCodeInURL();
+
+  // Start listening for updates immediately to check connection status
+  startListeningForUpdates();
 });
 
 // Setup all event listeners
@@ -126,7 +145,7 @@ function sanitizeFirebaseKey(key) {
 }
 
 // Create a new game as host
-function createGame() {
+async function createGame() {
   let hostName = document.getElementById("hostNameInput").value.trim();
   if (!hostName) {
     alert("Voer je naam in");
@@ -135,9 +154,14 @@ function createGame() {
   
   hostName = sanitizeFirebaseKey(hostName);
   if (!hostName) {
-    alert("De ingevoerde naam is ongeldig. Kies een andere naam.");
+    alert("De ingevoerde naam is ongeldig na het verwijderen van speciale tekens (zoals ., #, $, [, ]). Kies een andere naam.");
     return;
   }
+
+  // Show loading indicator
+  const createBtn = document.getElementById("createGameBtn");
+  createBtn.disabled = true;
+  createBtn.textContent = "Spel aanmaken...";
 
   gameState.playerName = hostName;
   gameState.gameCode = generateGameCode();
@@ -148,14 +172,37 @@ function createGame() {
     steps: 0,
   }];
 
+  // Initialize player steps
   gameState.playerSteps[hostName] = 0;
-  
-  document.getElementById("gameCodeDisplay").textContent = gameState.gameCode;
-  showScreen("roleCodeScreen");
+
+  try {
+    gameState.activeScreen = "roleCodeScreen"; // Host proceeds to role code screen
+
+    // Save game to Firebase
+    console.log("Attempting to save new game to Firebase:", gameState.gameCode);
+    await saveGameToFirebase();
+
+    // Start listening for updates (if not already started)
+    startListeningForUpdates();
+    // Display game code
+    document.getElementById("gameCodeDisplay").textContent = gameState.gameCode;
+
+    // The Firebase listener will now handle showing the "roleCodeScreen"
+    // based on the activeScreen property saved to Firebase.
+    showScreen("roleCodeScreen");
+  } catch (error) {
+    console.error("Error creating game:", error);
+    gameState.activeScreen = "startScreen"; // Revert on error
+    alert("Kon geen spel aanmaken. Probeer het opnieuw.");
+  } finally {
+    // Reset button
+    createBtn.disabled = false;
+    createBtn.textContent = "Maak Spel";
+  }
 }
 
-// Join an existing game (simplified for local testing)
-function joinGame() {
+// Join an existing game
+async function joinGame() {
   let playerName = document.getElementById("playerNameInput").value.trim();
   const gameCode = document.getElementById("gameCodeInput").value.trim().toUpperCase();
 
@@ -166,29 +213,95 @@ function joinGame() {
 
   playerName = sanitizeFirebaseKey(playerName);
   if (!playerName) {
-    showError("joinErrorMessage", "Ongeldige naam. Kies een andere naam.");
+    showError("joinErrorMessage", "De ingevoerde naam is ongeldig na het verwijderen van speciale tekens (zoals ., #, $, [, ]). Kies een andere naam.");
     return;
   }
 
-  // For local testing, just add the player
-  gameState.playerName = playerName;
-  gameState.gameCode = gameCode;
-  
-  if (!gameState.players.some(p => p.name === playerName)) {
-    gameState.players.push({
+  // Capture the joining player's current screen state before modifications for potential error recovery.
+  const originalJoiningPlayerScreen = gameState.activeScreen;
+
+  // Show loading indicator
+  const submitBtn = document.getElementById("submitJoinBtn");
+  submitBtn.disabled = true;
+  submitBtn.textContent = "Deelnemen...";
+
+  try {
+    // Try to load game from Firebase
+    console.log("Attempting to load game from Firebase:", gameCode);
+    const gameData = await loadGameFromFirebase(gameCode);
+
+    if (!gameData) {
+      showError("joinErrorMessage", "Spel niet gevonden. Controleer de code en probeer opnieuw.");
+      // Restore original screen state if game not found
+      gameState.activeScreen = originalJoiningPlayerScreen;
+      return;
+    }
+
+    // Check if name is already taken
+    if (gameData.players && gameData.players.some((p) => p.name === playerName)) {
+      showError("joinErrorMessage", "Naam is al in gebruik. Kies een andere naam.");
+      // Restore original screen state if name is taken
+      gameState.activeScreen = originalJoiningPlayerScreen;
+      return;
+    }
+
+    // Load game state
+    gameState.gameCode = gameCode;
+    gameState.playerName = playerName;
+    gameState.players = gameData.players || [];
+    gameState.currentPlayerIndex = gameData.currentPlayerIndex || 0;
+    gameState.currentQuestionIndex = gameData.currentQuestionIndex || 0;
+    gameState.fakemakerName = gameData.fakemakerName || "";
+    gameState.fakemakerUnmasked = gameData.fakemakerUnmasked || false;
+    gameState.playerSteps = gameData.playerSteps || {};
+    gameState.questions = gameData.questions || gameState.questions;
+    gameState.gameStarted = gameData.gameStarted || false;
+
+    // Add new player
+    const newPlayer = {
       name: playerName,
       role: "",
       isHost: false,
       steps: 0,
-    });
-    gameState.playerSteps[playerName] = 0;
-  }
+    };
 
-  showScreen("roleCodeScreen");
+    gameState.players.push(newPlayer);
+
+    // Initialize player steps
+    gameState.playerSteps[playerName] = 0;
+
+    // Determine the activeScreen that should be persisted in Firebase.
+    // This should be the screen the game was on before this player joined (e.g., hostGameScreen).
+    const screenToPersistInFirebase = gameData.activeScreen || "hostGameScreen";
+
+    // Temporarily set gameState.activeScreen to the value that needs to be saved to Firebase.
+    // This prevents the joining player's local screen (e.g., "startScreen") from being saved.
+    gameState.activeScreen = screenToPersistInFirebase;
+
+    console.log("Attempting to save updated game state to Firebase after join:", gameState.gameCode);
+    await saveGameToFirebase(); // Saves with activeScreen = screenToPersistInFirebase
+
+    // After successful save, set the joining player's local activeScreen for their next step.
+    gameState.activeScreen = "roleCodeScreen";
+    showScreen("roleCodeScreen"); // Navigate the joining player locally
+
+    // Start listening for updates
+    startListeningForUpdates();
+
+  } catch (error) {
+    console.error("Error joining game:", error);
+    showError("joinErrorMessage", "Fout bij deelnemen aan spel. Probeer het opnieuw.");
+    // Restore the original screen state for the joining player if an error occurred
+    gameState.activeScreen = originalJoiningPlayerScreen;
+  } finally {
+    // Reset button
+    submitBtn.disabled = false;
+    submitBtn.textContent = "Deelnemen";
+  }
 }
 
 // Submit role code
-function submitRoleCode() {
+async function submitRoleCode() {
   const roleCode = document.getElementById("roleCodeInput").value.trim();
 
   if (!roleCode) {
@@ -196,34 +309,59 @@ function submitRoleCode() {
     return;
   }
 
+  // Validate role code
   const roleEntry = roleCodes.find((r) => r.code === roleCode);
   if (!roleEntry) {
     showError("roleErrorMessage", "Ongeldige rolcode");
     return;
   }
 
-  gameState.playerRole = roleEntry.role;
+  // Show loading indicator
+  const submitBtn = document.getElementById("submitRoleBtn");
+  submitBtn.disabled = true;
+  submitBtn.textContent = "Bevestigen...";
 
-  const playerIndex = gameState.players.findIndex((p) => p.name === gameState.playerName);
-  if (playerIndex !== -1) {
-    gameState.players[playerIndex].role = roleEntry.role;
+  try {
+    // Update player role
+    gameState.playerRole = roleEntry.role;
 
-    if (roleEntry.role === "Fakemaker") {
-      gameState.fakemakerName = gameState.playerName;
+    // Update player in game state
+    const playerIndex = gameState.players.findIndex((p) => p.name === gameState.playerName);
+    if (playerIndex !== -1) {
+      gameState.players[playerIndex].role = roleEntry.role;
+
+      // If this is the Fakemaker, record their name
+      if (roleEntry.role === "Fakemaker") {
+        gameState.fakemakerName = gameState.playerName;
+      }
     }
+
+    // Save to Firebase
+    console.log("Attempting to save role update to Firebase:", gameState.gameCode);
+    await saveGameToFirebase();
+
+    // Display role
+    document.getElementById("playerRoleDisplay").textContent = roleEntry.role;
+
+    // Set role instructions
+    if (roleEntry.role === "Fakemaker") {
+      document.getElementById("roleInstructions").textContent = 
+        "Als Fakemaker zie je de juiste antwoorden. Probeer niet op te vallen tussen de Factcheckers!";
+    } else {
+      document.getElementById("roleInstructions").textContent = 
+        "Als Factchecker probeer je te ontdekken wie de Fakemaker is door hun antwoorden te observeren.";
+    }
+
+    showScreen("roleConfirmationScreen");
+
+  } catch (error) {
+    console.error("Error submitting role code:", error);
+    showError("roleErrorMessage", "Fout bij bevestigen van rol. Probeer het opnieuw.");
+  } finally {
+    // Reset button
+    submitBtn.disabled = false;
+    submitBtn.textContent = "Bevestigen";
   }
-
-  document.getElementById("playerRoleDisplay").textContent = roleEntry.role;
-
-  if (roleEntry.role === "Fakemaker") {
-    document.getElementById("roleInstructions").textContent = 
-      "Als Fakemaker zie je de juiste antwoorden. Probeer niet op te vallen tussen de Factcheckers!";
-  } else {
-    document.getElementById("roleInstructions").textContent = 
-      "Als Factchecker probeer je te ontdekken wie de Fakemaker is door hun antwoorden te observeren.";
-  }
-
-  showScreen("roleConfirmationScreen");
 }
 
 // Continue after role confirmation
@@ -233,22 +371,43 @@ function continueAfterRole() {
     updatePlayerList();
     showScreen("hostGameScreen");
   } else {
-    showScreen("gameScreen");
     updateGameDisplay();
+    showScreen("gameScreen");
   }
 }
 
 // Start game (host only)
-function startGame() {
+async function startGame() {
+  // No longer require a Fakemaker to be in the game
+  // Just check that players have roles assigned
   if (!gameState.players.some((player) => player.role)) {
     alert("Spelers moeten eerst rollen toegewezen krijgen.");
     return;
   }
 
-  gameState.gameStarted = true;
-  gameState.activeScreen = "gameScreen";
-  updateGameDisplay();
-  showScreen("gameScreen");
+  // Show loading indicator
+  const startBtn = document.getElementById("startGameBtn");
+  startBtn.disabled = true;
+  startBtn.textContent = "Spel starten...";
+
+  try {
+    // Update game state
+    gameState.gameStarted = true;
+    gameState.activeScreen = "gameScreen"; // Transition all players to the game screen
+
+    // Save to Firebase
+    console.log("Attempting to save game start to Firebase:", gameState.gameCode);
+    await saveGameToFirebase();
+    // Firebase listener will handle showing the screen and updating display
+
+  } catch (error) {
+    console.error("Error starting game:", error);
+    alert("Kon spel niet starten. Probeer het opnieuw.");
+  } finally {
+    // Reset button
+    startBtn.disabled = false;
+    startBtn.textContent = "Spel Starten";
+  }
 }
 
 // Show current question
@@ -338,55 +497,69 @@ function handleMediaContent(question) {
 }
 
 // Submit true/false answer
-function submitAnswer(answer) {
+async function submitAnswer(answer) {
   const question = gameState.questions[gameState.currentQuestionIndex];
   const isCorrect = answer === question.answer;
   
-  processAnswer(isCorrect, answer);
+  await processAnswer(isCorrect, answer);
 }
 
 // Submit multiple choice answer
-function submitMultipleChoiceAnswer(optionIndex) {
+async function submitMultipleChoiceAnswer(optionIndex) {
   const question = gameState.questions[gameState.currentQuestionIndex];
   const isCorrect = optionIndex === question.correctOption;
   
-  processAnswer(isCorrect, optionIndex);
+  await processAnswer(isCorrect, optionIndex);
 }
 
 // Process answer and update game state
-function processAnswer(isCorrect, playerAnswer) {
-  // Update player steps
-  const currentPlayer = gameState.players.find(p => p.name === gameState.playerName);
-  if (currentPlayer) {
-    if (isCorrect) {
-      currentPlayer.steps += 1;
-      gameState.playerSteps[gameState.playerName] = currentPlayer.steps;
+async function processAnswer(isCorrect, playerAnswer) {
+  try {
+    // Update player steps
+    const currentPlayer = gameState.players.find(p => p.name === gameState.playerName);
+    if (currentPlayer) {
+      if (isCorrect) {
+        currentPlayer.steps += 1;
+        gameState.playerSteps[gameState.playerName] = currentPlayer.steps;
+      }
     }
+
+    // Show result
+    const resultTitle = isCorrect ? "Correct!" : "Fout!";
+    const resultMessage = isCorrect ? 
+      "Je hebt het juiste antwoord gegeven!" : 
+      "Helaas, dat was niet het juiste antwoord.";
+
+    document.getElementById("resultTitle").textContent = resultTitle;
+    document.getElementById("resultMessage").textContent = resultMessage;
+    document.getElementById("stepsDisplayResult").textContent = gameState.playerSteps[gameState.playerName] || 0;
+    
+    const stepChange = isCorrect ? "+1 stap" : "Geen stappen";
+    document.getElementById("stepChange").textContent = stepChange;
+
+    // Save game state
+    await saveGameToFirebase();
+    
+    showScreen("resultScreen");
+
+  } catch (error) {
+    console.error("Error processing answer:", error);
+    alert("Fout bij verwerken van antwoord. Probeer het opnieuw.");
   }
-
-  // Show result
-  const resultTitle = isCorrect ? "Correct!" : "Fout!";
-  const resultMessage = isCorrect ? 
-    "Je hebt het juiste antwoord gegeven!" : 
-    "Helaas, dat was niet het juiste antwoord.";
-
-  document.getElementById("resultTitle").textContent = resultTitle;
-  document.getElementById("resultMessage").textContent = resultMessage;
-  document.getElementById("stepsDisplayResult").textContent = gameState.playerSteps[gameState.playerName] || 0;
-  
-  const stepChange = isCorrect ? "+1 stap" : "Geen stappen";
-  document.getElementById("stepChange").textContent = stepChange;
-
-  showScreen("resultScreen");
 }
 
 // Move to next turn
-function nextTurn() {
-  gameState.currentPlayerIndex = (gameState.currentPlayerIndex + 1) % gameState.players.length;
-  gameState.currentQuestionIndex += 1;
+async function nextTurn() {
+  try {
+    gameState.currentPlayerIndex = (gameState.currentPlayerIndex + 1) % gameState.players.length;
+    gameState.currentQuestionIndex += 1;
 
-  updateGameDisplay();
-  showScreen("gameScreen");
+    await saveGameToFirebase();
+    // Firebase listener will handle screen updates
+  } catch (error) {
+    console.error("Error moving to next turn:", error);
+    alert("Fout bij volgende beurt. Probeer het opnieuw.");
+  }
 }
 
 // Reset game
@@ -487,7 +660,7 @@ function updatePlayerList() {
   // Enable start button if conditions are met
   const startBtn = document.getElementById("startGameBtn");
   if (startBtn) {
-    startBtn.disabled = gameState.players.length < 1 || !gameState.players.some((p) => p.role);
+    startBtn.disabled = gameState.players.length < 2 || !gameState.players.some((p) => p.role);
   }
 }
 
@@ -522,6 +695,92 @@ function checkForGameCodeInURL() {
     if (gameCodeInput) {
       gameCodeInput.value = gameCode;
       showScreen("joinGameScreen");
+    }
+  }
+}
+
+// Firebase functions
+async function saveGameToFirebase() {
+  if (!gameState.gameCode) return;
+  
+  try {
+    await database.ref(`games/${gameState.gameCode}`).set({
+      players: gameState.players,
+      currentPlayerIndex: gameState.currentPlayerIndex,
+      currentQuestionIndex: gameState.currentQuestionIndex,
+      fakemakerName: gameState.fakemakerName,
+      fakemakerUnmasked: gameState.fakemakerUnmasked,
+      playerSteps: gameState.playerSteps,
+      questions: gameState.questions,
+      activeScreen: gameState.activeScreen,
+      lastResult: gameState.lastResult,
+      gameStarted: gameState.gameStarted,
+      timestamp: firebase.database.ServerValue.TIMESTAMP
+    });
+    console.log("Game saved to Firebase successfully");
+  } catch (error) {
+    console.error("Error saving to Firebase:", error);
+    throw error;
+  }
+}
+
+async function loadGameFromFirebase(gameCode) {
+  try {
+    const snapshot = await database.ref(`games/${gameCode}`).once('value');
+    return snapshot.val();
+  } catch (error) {
+    console.error("Error loading from Firebase:", error);
+    return null;
+  }
+}
+
+function startListeningForUpdates() {
+  if (!gameState.gameCode) return;
+  
+  database.ref(`games/${gameState.gameCode}`).on('value', (snapshot) => {
+    const data = snapshot.val();
+    if (data) {
+      // Update local game state
+      Object.assign(gameState, {
+        players: data.players || [],
+        currentPlayerIndex: data.currentPlayerIndex || 0,
+        currentQuestionIndex: data.currentQuestionIndex || 0,
+        fakemakerName: data.fakemakerName || "",
+        fakemakerUnmasked: data.fakemakerUnmasked || false,
+        playerSteps: data.playerSteps || {},
+        questions: data.questions || gameState.questions,
+        lastResult: data.lastResult || { title: "", message: "" },
+        gameStarted: data.gameStarted || false,
+      });
+
+      // Update UI based on active screen
+      if (data.activeScreen && data.activeScreen !== gameState.activeScreen) {
+        gameState.activeScreen = data.activeScreen;
+        showScreen(data.activeScreen);
+      }
+
+      // Update displays
+      updatePlayerList();
+      updateGameDisplay();
+      updateConnectionStatus(true);
+    }
+  }, (error) => {
+    console.error("Firebase listener error:", error);
+    updateConnectionStatus(false);
+  });
+}
+
+function updateConnectionStatus(connected) {
+  const indicator = document.getElementById("connectionIndicator");
+  const status = document.getElementById("connectionStatus");
+  
+  if (indicator && status) {
+    if (connected) {
+      indicator.className = "connection-indicator";
+      status.textContent = "Verbonden";
+    } else {
+      indicator.className = "connection-indicator offline";
+      status.textContent = "Verbinding verbroken";
     }
   }
 }
