@@ -95,8 +95,6 @@
             <div class="game-header">
                 <div class="player-info">
                     <p>Huidige Speler: <span id="currentPlayerDisplay" class="highlight"></span></p>
-                    <p>Jouw Rol: <span id="roleName" class="highlight"></span></p>
-                    <p>Jouw Stappen: <span id="stepsDisplay" class="highlight">0</span></p>
                 </div>
                 <div id="answerInfo" class="answer-info hidden">
                     <p>Juiste Antwoord: <span id="correctAnswer" class="highlight"></span></p>
@@ -105,7 +103,10 @@
             
             <div id="yourTurnInfo" class="your-turn-info">
                 <p>Het is jouw beurt!</p>
-                <button id="showQuestionBtn" class="primary-button">Toon Vraag</button>
+                <div style="display: flex; justify-content: center; align-items: center; gap: 10px;">
+                    <button id="showQuestionBtn" class="primary-button">Toon Vraag</button>
+                    <button id="scanHiroGameBtn" class="secondary-button">Scan Hiro</button>
+                </div>
             </div>
             
             <div class="connection-status">
