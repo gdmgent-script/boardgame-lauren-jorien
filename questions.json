@@ -55,88 +55,11 @@
     "correctOption": 1
   },
   {
-    "id": 6,
-    "type": "image",
-    "content": "Is deze sociale media post over een jong meisje echt of nep?",
-    "answer": false,
-    "imagePath": "https://gdmgent-script.github.io/TruthSeekers-App/vraag2Meisje.pdf"
-  },
-  {
     "id": 7,
     "type": "video",
     "content": "Is deze YouTube video echt of nep?",
     "answer": false,
     "videoUrl": "https://www.youtube.com/watch?v=bXKkZh2UEEA"
-  },
-  {
-    "id": 8,
-    "type": "image",
-    "content": "Is dit nieuwsartikel over extremisten die videogames misbruiken echt of nep?",
-    "answer": true,
-    "imagePath": "https://gdmgent-script.github.io/TruthSeekers-App/vraag3Extremisten.pdf"
-  },
-  {
-    "id": 9,
-    "type": "image",
-    "content": "Is dit nieuwsartikel over het Vaticaan dat verbouwd wordt echt of nep?",
-    "answer": false,
-    "imagePath": "https://gdmgent-script.github.io/TruthSeekers-App/vraag4Vaticaan.pdf"
-  },
-  {
-    "id": 10,
-    "type": "image",
-    "content": "Is deze sociale media post over Ruben Van Gucht die zichzelf 'polymobiel' noemt echt of nep?",
-    "answer": false,
-    "imagePath": "https://gdmgent-script.github.io/TruthSeekers-App/vraag5Ruben.pdf"
-  },
-  {
-    "id": 11,
-    "type": "image",
-    "content": "Is deze sociale media post van Bart De Wever echt of nep?",
-    "answer": false,
-    "imagePath": "https://gdmgent-script.github.io/TruthSeekers-App/vraag6Bart.pdf"
-  },
-  {
-    "id": 12,
-    "type": "image",
-    "content": "Is dit nieuwsartikel over een Duitse toerist met een Romeinse zuil op een e-step echt of nep?",
-    "answer": true,
-    "imagePath": "https://gdmgent-script.github.io/TruthSeekers-App/vraag7Zuil.pdf"
-  },
-  {
-    "id": 13,
-    "type": "image",
-    "content": "Is dit nieuwsartikel over een containerschip in iemands tuin echt of nep?",
-    "answer": true,
-    "imagePath": "https://gdmgent-script.github.io/TruthSeekers-App/vraag8Schip.pdf"
-  },
-  {
-    "id": 14,
-    "type": "image",
-    "content": "Is dit artikel van The Onion over een tiener die Peter Gabriel omhoog houdt echt of nep?",
-    "answer": false,
-    "imagePath": "https://gdmgent-script.github.io/TruthSeekers-App/vraag9Peter.pdf"
-  },
-  {
-    "id": 15,
-    "type": "image",
-    "content": "Is dit nieuwsartikel over Elon Musk die afstand neemt van het vaderschap echt of nep?",
-    "answer": false,
-    "imagePath": "https://gdmgent-script.github.io/TruthSeekers-App/vraag10Elon.pdf"
-  },
-  {
-    "id": 16,
-    "type": "video",
-    "content": "Is deze TikTok video echt of nep?",
-    "answer": false,
-    "videoUrl": "https://gdmgent-script.github.io/TruthSeekers-App/TikTok.mp4"
-  },
-  {
-    "id": 17,
-    "type": "video",
-    "content": "Is deze video echt of nep?",
-    "answer": false,
-    "videoUrl": "https://gdmgent-script.github.io/TruthSeekers-App/Mother.mp4"
   },
   {
     "id": 18,
@@ -560,7 +483,7 @@
     "type": "image",
     "content": "Is deze nieuwsartikel over Gaza echt of nep?",
     "answer": false,
-    "imagePath": "75_F.png"
+    "imagePath": "Images/75_F.png"
   },
    {
     "id": 76,
