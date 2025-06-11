@@ -757,9 +757,6 @@ async function nextTurn() {
 
 // End game
 async function endGame() {
-  // This function should be called when a definitive win/loss condition is met
-  // (e.g., Fakemaker unmasked, or a player reaches a target score).
-  // For "Keep the game going", this function is called less, as questions loop.
 
   let resultTitle = "Game Over!";
   let resultMessageText = "";
@@ -767,7 +764,7 @@ async function endGame() {
   if (gameState.players.length === 1) {
     // Only one player left, they are the winner by default
     const winner = gameState.players[0];
-    resultMessageText = `${winner.name} is de laatste speler over en wint het spel!`;
+    resultMessageText = `${winner.name} heeft The Dark Web kunnen ontsnappen! `;
   } else {
     resultMessageText = "Het spel is geëindigd.";
   }

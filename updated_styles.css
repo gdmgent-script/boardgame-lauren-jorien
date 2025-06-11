@@ -619,6 +619,7 @@ button:disabled {
     font-weight: 600;
     box-shadow: 0 2px 8px rgba(0,0,0,0.08);
     opacity: 0.95;
+    display: none;
 }
 
 @media (max-width: 600px) {
