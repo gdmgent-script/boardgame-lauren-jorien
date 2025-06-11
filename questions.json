@@ -32,84 +32,71 @@
     "type": "image",
     "content": "Is dit nieuwsartikel over deze moordernaar echt of nep?",
     "answer": true,
-    "imagePath": "Images/21_Real.png"
+    "imagePath": "Images/21_real.png"
   },
-  {
-    "id": 22,
-    "type": "image",
-    "content": "Is deze post over een beatboxende non echt of nep?",
-    "answer": true,
-    "imagePath": "Images/22_Real.png"
-  },
+
   {
     "id": 23,
     "type": "image",
     "content": "Is deze post over haribo snoepjes met cannabis echt of nep?",
     "answer": true,
-    "imagePath": "Images/23_Real.png"
+    "imagePath": "Images/22_real.png"
   },
    {
     "id": 24,
     "type": "image",
     "content": "Is deze sociale media post over chocolade echt of nep?",
     "answer": false,
-    "imagePath": "Images/24_Fake.png"
+    "imagePath": "Images/23_Fake.png"
   },
      {
     "id": 25,
     "type": "image",
     "content": "Is deze post over de siësta echt of nep?",
     "answer": false,
-    "imagePath": "Images/25_Fake.png"
+    "imagePath": "Images/24_Fake.png"
   },
    {
     "id": 26,
     "type": "image",
     "content": "Is dit nieuwsartikel over roddelen echt of nep?",
     "answer": true,
-    "imagePath": "Images/26_Real.png"
+    "imagePath": "Images/25_Real.png"
   },
    {
     "id": 27,
     "type": "image",
     "content": "Is deze post over de toeristen in Brugge echt of nep?",
     "answer": true,
-    "imagePath": "Images/27_Real.png"
+    "imagePath": "Images/26_Real.png"
   },
    {
     "id": 28,
     "type": "image",
     "content": "Is deze  sociale media post over een waterpistool echt of nep?",
     "answer": true,
-    "imagePath": "Images/28_Real.png"
+    "imagePath": "Images/27_Real.png"
   },
    {
     "id": 29,
     "type": "image",
     "content": "Is deze post over de jongen echt of nep?",
     "answer": true,
-    "imagePath": "Images/29_Real.png"
+    "imagePath": "Images/28_R.png"
   },
    {
     "id": 30,
     "type": "image",
     "content": "Is dit nieuwsartikel over deze jongens echt of nep?",
     "answer": false,
-    "imagePath": "Images/30_Fake.png"
+    "imagePath": "Images/29_F.png"
   },
    {
     "id": 31,
     "type": "image",
     "content": "Is deze post over Trump echt of nep?",
     "answer": false,
-    "imagePath": "Images/31_Fake.png"
-  },
-  {
-    "id": 32,
-    "type": "image",
-    "content": "Is deze post over homoseksuelen echt of nep?",
-    "answer": false,
-    "imagePath": "Images/32_Fake.png"
+    "imagePath": "Images/30_F.png"
   },
   {
     "id": 34,
