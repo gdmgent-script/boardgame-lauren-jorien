@@ -299,17 +299,17 @@ async function joinGame() {
     // Initialize player steps
     gameState.playerSteps[playerName] = 0;
 
-    // Set the active screen BEFORE saving to Firebase
-    gameState.activeScreen = "roleCodeScreen";
-
     // Save updated game state
     console.log("Attempting to save updated game state to Firebase after join:", gameState.gameCode);
+    
+    gameState.activeScreen = "roleCodeScreen";
     await saveGameToFirebase();
 
     // Start listening for updates
     startListeningForUpdates();
-    // The Firebase listener will now handle showing the "roleCodeScreen"
-    // based on the activeScreen property saved to Firebase.
+
+    // Show role code screen
+    showScreen("roleCodeScreen");
   } catch (error) {
     console.error("Error joining game:", error);
     showError("joinErrorMessage", "Fout bij deelnemen aan spel. Probeer het opnieuw.");
@@ -702,19 +702,12 @@ async function endGame() {
 
 // Reset game
 function resetGame() {
-  // Stop listening for updates for the current game, if there is one.
-  // This must happen BEFORE gameState.gameCode is cleared.
-  if (gameState.gameCode) {
-    stopListeningForUpdates();
-  }
-
   // Clear game state
   gameState.gameCode = "";
   gameState.players = [];
   gameState.currentPlayerIndex = 0;
   gameState.currentQuestionIndex = 0;
   gameState.fakemakerName = "";
-  // gameState.questions = []; // Questions are loaded once on DOMContentLoaded, keep them.
   gameState.fakemakerUnmasked = false;
   gameState.playerName = "";
   gameState.playerRole = "";
@@ -723,6 +716,9 @@ function resetGame() {
   gameState.activeScreen = "startScreen";
   gameState.lastResult = { title: "", message: "" };
   gameState.gameEnded = false;
+
+  // Stop listening for updates
+  stopListeningForUpdates();
 
   // No need to save to Firebase, as this is a local reset to main menu.
   showScreen("startScreen");
@@ -866,17 +862,15 @@ function startListeningForUpdates() {
 
 // Stop listening for updates
 function stopListeningForUpdates() {
-  if (!gameState.gameCode) {
-    console.log("stopListeningForUpdates: No active game code to stop listeners for.");
-    return;
-  }
+  if (!gameState.gameCode) return;
 
   const gameRef = database.ref(`games/${gameState.gameCode}`);
-  gameRef.off("value"); // Detach specific 'value' listeners for this game path
-  console.log(`Stopped listening for Firebase game updates on ${gameState.gameCode}.`);
+  gameRef.off();
+  console.log("Stopped listening for Firebase game updates.");
 
-  // The .info/connected listener is global and should not be stopped here.
-  // It's managed by its own .on() call in startListeningForUpdates and typically persists.
+  const connectedRef = database.ref(".info/connected");
+  connectedRef.off();
+  console.log("Stopped listening for Firebase connection status.");
 }
 
 // Check for game code in URL
