@@ -1,3 +1,29 @@
+// Voorbeeld voor backFromHostBtn
+const backFromHostBtn = document.getElementById('backFromHostBtn');
+if (backFromHostBtn) {
+    backFromHostBtn.addEventListener('click', function() {
+        showScreen('startScreen');
+    });
+}
+
+// Voorbeeld voor backFromJoinBtn
+const backFromJoinBtn = document.getElementById('backFromJoinBtn');
+if (backFromJoinBtn) {
+    backFromJoinBtn.addEventListener('click', function() {
+        showScreen('startScreen');
+    });
+}
+
+// Voorbeeld voor copyCodeBtn
+const copyCodeBtn = document.getElementById('copyCodeBtn');
+if (copyCodeBtn) {
+    copyCodeBtn.addEventListener('click', function() {
+        const gameCode = document.getElementById('gameCodeDisplay').textContent;
+        copyToClipboard(gameCode); // Ervan uitgaande dat copyToClipboard een globale functie is
+    });
+}
+
+// Zorg ervoor dat je showScreen en copyToClipboard functies correct gedefinieerd zijn.
 /* Truth Seekers Game - script.js with enhanced Firebase debugging */
 
 // Game state
@@ -12,6 +38,8 @@ const gameState = {
   playerName: "",
   playerRole: "",
   playerSteps: {},
+  activeScreen: "startScreen", // To control which screen is globally active
+  lastResult: { title: "", message: "" }, // To store result message for all players
 };
 
 // Role codes
@@ -135,26 +163,6 @@ document.addEventListener("DOMContentLoaded", async () => {
     .getElementById("shareGameBtn")
     .addEventListener("click", shareGame);
 
-  // AR View Buttons
-  const globalScanHiroBtn = document.getElementById("globalScanHiroBtn");
-  if (globalScanHiroBtn) {
-      globalScanHiroBtn.addEventListener("click", showArView);
-  }
-  const closeArViewBtn = document.getElementById("closeArViewBtn");
-  if (closeArViewBtn) {
-      closeArViewBtn.addEventListener("click", hideArView);
-  }
-  const arTrueBtn = document.getElementById('arTrueBtn');
-  if (arTrueBtn) {
-    arTrueBtn.addEventListener('click', () => handleArScanAnswer(true));
-  }
-  const arFalseBtn = document.getElementById('arFalseBtn');
-  if (arFalseBtn) {
-    arFalseBtn.addEventListener('click', () => handleArScanAnswer(false));
-  }
-
-
-
   // Check for game code in URL
   checkForGameCodeInURL();
 
@@ -168,12 +176,6 @@ function showScreen(screenId) {
     screen.classList.remove("active");
   });
   document.getElementById(screenId).classList.add("active");
-
-  // Hide global AR button on screens before game join/start
-  const globalArBtn = document.getElementById("globalScanHiroBtn");
-  if (["startScreen", "hostSetupScreen", "joinGameScreen", "roleCodeScreen"].includes(screenId)) {
-    if (globalArBtn) globalArBtn.classList.add("hidden");
-  }
 }
 
 // Generate a random game code
@@ -186,11 +188,26 @@ function generateGameCode() {
   return code;
 }
 
+// Sanitize player names to be valid Firebase keys
+function sanitizeFirebaseKey(key) {
+  if (!key) return "";
+  // Replace forbidden characters with an underscore
+  let sanitizedKey = key.replace(/[.#$[\]]/g, "_");
+  // Ensure the key is not empty after sanitization (e.g. if name was just ".")
+  if (!sanitizedKey.trim()) return ""; 
+  return sanitizedKey;
+}
+
 // Create a new game as host
 async function createGame() {
-  const hostName = document.getElementById("hostNameInput").value.trim();
+  let hostName = document.getElementById("hostNameInput").value.trim();
   if (!hostName) {
     alert("Voer je naam in");
+    return;
+  }
+  hostName = sanitizeFirebaseKey(hostName);
+  if (!hostName) {
+    alert("De ingevoerde naam is ongeldig na het verwijderen van speciale tekens (zoals ., #, $, [, ]). Kies een andere naam.");
     return;
   }
 
@@ -213,20 +230,22 @@ async function createGame() {
   gameState.playerSteps[hostName] = 0;
 
   try {
+    gameState.activeScreen = "roleCodeScreen"; // Host proceeds to role code screen
+
     // Save game to Firebase
     console.log("Attempting to save new game to Firebase:", gameState.gameCode);
     await saveGameToFirebase();
 
     // Start listening for updates (if not already started)
     startListeningForUpdates();
-
     // Display game code
     document.getElementById("gameCodeDisplay").textContent = gameState.gameCode;
 
-    // Modified: Direct host to role code screen instead of host game screen
-    showScreen("roleCodeScreen");
+    // The Firebase listener will now handle showing the "roleCodeScreen"
+    // based on the activeScreen property saved to Firebase.
   } catch (error) {
     console.error("Error creating game:", error);
+    gameState.activeScreen = "startScreen"; // Revert on error
     alert("Kon geen spel aanmaken. Probeer het opnieuw.");
   } finally {
     // Reset button
@@ -235,205 +254,22 @@ async function createGame() {
   }
 }
 
-// AR View Logic
-// AR View Logic - FIXED VERSION
-let arComponentsInitialized = false;
-let arSceneCreated = false;
-const arModels = [
-    { primitive: "box", color: "red", scale: "1 1 1" },
-    { primitive: "sphere", color: "blue", scale: "1 1 1" },
-    { primitive: "cone", color: "green", scale: "1 1 1" }
-];
-let arCurrentIndex = 0;
-let arDynamicObject; // Will be assigned when AR is initialized
-
-const arSceneInnerHtml = `
-    <a-marker preset="hiro">
-        <a-entity id="dynamicObject" position="0 0 0" scale="0.5 0.5 0.5"></a-entity>
-    </a-marker>
-    <a-entity camera></a-entity>
-`;
-
-function initializeArComponents() {
-    if (arComponentsInitialized) return;
-
-    arDynamicObject = document.getElementById("dynamicObject");
-    // Ensure querySelector is specific enough if multiple markers exist on the page
-    const marker = document.querySelector("#arViewContainer a-marker[preset='hiro']");
-
-    if (!arDynamicObject || !marker) {
-        console.error("AR components (dynamicObject or marker) not found for initialization.");
-        // Retry initialization if elements weren't ready
-        setTimeout(initializeArComponents, 500);
-        return;
-    }
-
-    marker.addEventListener("markerFound", () => {
-        console.log("Marker found, changing AR model.");
-        if (!arDynamicObject) return;
-        const model = arModels[arCurrentIndex];
-        arDynamicObject.setAttribute("geometry", `primitive: ${model.primitive}`);
-        arDynamicObject.setAttribute("material", `color: ${model.color}`);
-        arDynamicObject.setAttribute("scale", model.scale); // Use model-specific scale
-        arCurrentIndex = (arCurrentIndex + 1) % arModels.length;
-    });
-
-    arComponentsInitialized = true;
-    console.log("AR Components Initialized");
-}
-
-function showArView() {
-    const arViewContainer = document.getElementById("arViewContainer");
-    if (!arViewContainer) {
-        console.error("AR View Container not found.");
-        return;
-    }
-
-    // Show the AR container first
-    arViewContainer.classList.add("active");
-
-    // Only create and start AR scene if it hasn't been created yet
-    if (!arSceneCreated) {
-        createArScene();
-    } else {
-        // If scene exists but was paused, restart it
-        const scene = arViewContainer.querySelector('a-scene');
-        if (scene) {
-            if (scene.hasLoaded && !scene.isPlaying) {
-                scene.play();
-            }
-        }
-    }
-}
-
-function createArScene() {
-    const arViewContainer = document.getElementById("arViewContainer");
-    
-    // Create the scene element without AR.js attributes initially
-    const scene = document.createElement('a-scene');
-    scene.setAttribute('embedded', '');
-    scene.setAttribute('style', 'width: 100%; height: 100%;');
-    
-    // Set the HTML content first
-    scene.innerHTML = arSceneInnerHtml;
-    
-    // Insert the scene before the button container
-    const buttonContainer = arViewContainer.querySelector('.ar-overlay-buttons');
-    if (buttonContainer) {
-        arViewContainer.insertBefore(scene, buttonContainer);
-    } else {
-        arViewContainer.appendChild(scene);
-    }
-
-    // Wait for the scene to be ready, then add AR.js attributes
-    scene.addEventListener('loaded', () => {
-        console.log("AR scene loaded, now adding AR.js functionality...");
-        
-        // NOW add the AR.js attribute to start camera
-        scene.setAttribute('arjs', 'sourceType: webcam; debugUIEnabled: false; detectionMode: mono_and_matrix; matrixCodeType: 3x3;');
-        
-        // Initialize custom AR components
-        setTimeout(() => {
-            initializeArComponents();
-        }, 1000); // Give AR.js time to initialize
-        
-    }, { once: true });
-
-    arSceneCreated = true;
-    console.log("AR scene created and will initialize camera after loading.");
-}
-
-function hideArView() {
-    const arViewContainer = document.getElementById("arViewContainer");
-    if (!arViewContainer) return;
-
-    const scene = arViewContainer.querySelector('a-scene');
-
-    if (scene) {
-        // Stop the AR session and release camera
-        if (scene.hasLoaded && scene.isPlaying) {
-            scene.pause();
-        }
-        
-        // Remove AR.js attributes to fully stop camera access
-        scene.removeAttribute('arjs');
-        
-        // Remove the scene element from DOM
-        scene.parentNode.removeChild(scene);
-        console.log("AR scene removed from DOM and camera released.");
-    }
-
-    arViewContainer.classList.remove("active");
-    arComponentsInitialized = false;
-    arSceneCreated = false; // Reset so it can be recreated next time
-}
-
-// Alternative approach - create scene but don't start AR until button click
-function showArViewAlternative() {
-    const arViewContainer = document.getElementById("arViewContainer");
-    if (!arViewContainer) {
-        console.error("AR View Container not found.");
-        return;
-    }
-
-    arViewContainer.classList.add("active");
-
-    // Check if scene already exists
-    let scene = arViewContainer.querySelector('a-scene');
-
-    if (!scene) {
-        // Create the scene element WITHOUT arjs attribute
-        scene = document.createElement('a-scene');
-        scene.setAttribute('embedded', '');
-        scene.setAttribute('style', 'width: 100%; height: 100%;');
-        scene.innerHTML = arSceneInnerHtml;
-        
-        // Insert the new scene before the button container
-        const buttonContainer = arViewContainer.querySelector('.ar-overlay-buttons');
-        if (buttonContainer) {
-            arViewContainer.insertBefore(scene, buttonContainer);
-        } else {
-            arViewContainer.appendChild(scene); // Fallback
-        }
-
-        // Add a "Start Camera" button instead of auto-starting
-        const startCameraBtn = document.createElement('button');
-        startCameraBtn.textContent = 'Start Camera';
-        startCameraBtn.className = 'ar-start-camera-btn';
-        startCameraBtn.onclick = () => {
-            // NOW add the AR.js attribute to start camera
-            scene.setAttribute('arjs', 'sourceType: webcam; debugUIEnabled: false; detectionMode: mono_and_matrix; matrixCodeType: 3x3;');
-            startCameraBtn.style.display = 'none';
-            setTimeout(initializeArComponents, 1000);
-        };
-        
-        arViewContainer.appendChild(startCameraBtn);
-        
-        console.log("AR scene created. Click 'Start Camera' to begin AR scanning.");
-    }
-}
-
-// Handle answer from AR scan view
-function handleArScanAnswer(isTrueClicked) {
-    if (isTrueClicked === false) { // User clicked "Nep"
-        console.log("AR Scan: Correct (Nep gekozen)");
-        // Hier kun je eventueel feedback geven of een klein speleffect toevoegen
-    } else { // User clicked "Echt"
-        console.log("AR Scan: Incorrect (Echt gekozen)");
-        // Hier kun je eventueel feedback geven
-    }
-    // Sluit de AR view na de selectie
-    hideArView();
-}
 // Join an existing game
 async function joinGame() {
-  const playerName = document.getElementById("playerNameInput").value.trim();
+  let playerName = document.getElementById("playerNameInput").value.trim();
   const gameCode = document
     .getElementById("gameCodeInput")
     .value.trim()
     .toUpperCase();
 
   if (!playerName || !gameCode) {
+    showError("joinErrorMessage", "Voer je naam en spelcode in");
+    return;
+  }
+
+  playerName = sanitizeFirebaseKey(playerName);
+  if (!playerName) {
+    // The showError function handles hiding the message after a timeout.
     showError("joinErrorMessage", "Voer je naam en spelcode in");
     return;
   }
@@ -490,19 +326,22 @@ async function joinGame() {
     gameState.playerSteps[playerName] = 0;
 
     // Save updated game state
+    // gameState.activeScreen is hier wat geladen werd vanuit Firebase (bijv. "hostGameScreen").
+    // We slaan de nieuwe speler op in de lijst, maar wijzigen niet de globale activeScreen.
     console.log("Attempting to save updated game state to Firebase after join:", gameState.gameCode);
     await saveGameToFirebase();
 
     // Start listening for updates
     startListeningForUpdates();
 
-    // Show role code screen
+    // Voor deze toetredende speler, navigeer lokaal naar het rolcodescherm.
     showScreen("roleCodeScreen");
   } catch (error) {
     console.error("Error joining game:", error);
     showError("joinErrorMessage", "Fout bij deelnemen aan spel. Probeer het opnieuw.");
   } finally {
     // Reset button
+    // gameState.activeScreen might need reset if join failed before Firebase save
     document.getElementById("submitJoinBtn").disabled = false;
     document.getElementById("submitJoinBtn").textContent = "Deelnemen";
   }
@@ -564,16 +403,13 @@ async function startGame() {
   try {
     // Update game state
     gameState.gameStarted = true;
+    gameState.activeScreen = "gameScreen"; // Transition all players to the game screen
 
     // Save to Firebase
     console.log("Attempting to save game start to Firebase:", gameState.gameCode);
     await saveGameToFirebase();
+    // Firebase listener will handle showing the screen and updating display
 
-    // Update display
-    updateGameDisplay();
-
-    // Show game screen
-    showScreen("gameScreen");
   } catch (error) {
     console.error("Error starting game:", error);
     alert("Failed to start game. Please try again.");
@@ -637,6 +473,7 @@ async function submitRoleCode() {
         "Als Factchecker probeer je te ontdekken wie de Fakemaker is door hun antwoorden te observeren.";
     }
 
+    gameState.activeScreen = "roleConfirmationScreen";
     // Show role confirmation screen
     showScreen("roleConfirmationScreen");
   } catch (error) {
@@ -650,53 +487,62 @@ async function submitRoleCode() {
 }
 
 // Continue after role assignment
-function continueAfterRole() {
-  // Show global AR button now that role is confirmed
-  const globalArBtn = document.getElementById("globalScanHiroBtn");
-  if (globalArBtn) globalArBtn.classList.remove("hidden");
-
+async function continueAfterRole() { // Make the function async
   // If player is host, go to host screen
   const isHost = gameState.players.find(
     (p) => p.name === gameState.playerName
   )?.isHost;
 
   if (isHost) {
-    updatePlayerList();
-    showScreen("hostGameScreen");
-  } else {
-    // Check if game has already started
+    gameState.activeScreen = "hostGameScreen";
+    showScreen("hostGameScreen"); // Show immediately for host responsiveness
+    console.log("Host continuing to hostGameScreen, saving to Firebase...");
+    try {
+      await saveGameToFirebase(); // Await the save operation
+      console.log("Host state (hostGameScreen) saved to Firebase.");
+      // updatePlayerList(); // Firebase listener will handle this via screen switch logic if needed
+    } catch (error) {
+      console.error("Error saving game state in continueAfterRole for host:", error);
+      // Optionally, handle the error, e.g., show a message or revert screen
+    }
+  } else { // Non-host player
+    // Check if game has already started (based on current gameState, which should be updated by Firebase)
     if (gameState.gameStarted) {
       // Game already started, join immediately
-      updateGameDisplay();
-      showScreen("gameScreen");
+      gameState.activeScreen = "gameScreen";
+      console.log("Non-host continuing to gameScreen, saving to Firebase...");
+      try {
+        await saveGameToFirebase(); // Await the save operation
+        console.log("Non-host state (gameScreen) saved to Firebase.");
+        // The Firebase listener should pick up "gameScreen" and transition the player.
+        // No direct showScreen() call here to maintain consistency with listener-driven updates.
+      } catch (error) {
+        console.error("Error saving game state in continueAfterRole for non-host:", error);
+      }
     } else {
       // Show waiting screen with clear message
-      document.getElementById("roleInstructions").textContent = 
+      // Player stays on roleConfirmationScreen, but UI is updated.
+      const roleInstructionsElement = document.getElementById("roleInstructions");
+      const continueButton = document.getElementById("continueAfterRoleBtn");
+      if (roleInstructionsElement) roleInstructionsElement.textContent =
         "Waiting for the host to start the game. You will automatically join when the game begins.";
-      // Keep on role confirmation screen but update the UI to show waiting status
-      document.getElementById("continueAfterRoleBtn").style.display = "none";
+      if (continueButton) continueButton.style.display = "none";
+      // No change to gameState.activeScreen needs to be saved here for the waiting player.
     }
   }
 }
 
 // Update game display
 function updateGameDisplay() {
-  // Ensure global AR button is visible if game is active
-  const globalArBtn = document.getElementById("globalScanHiroBtn");
-  if (globalArBtn) globalArBtn.classList.remove("hidden");
-
   const currentPlayer = gameState.players[gameState.currentPlayerIndex];
+
+  if (!currentPlayer) return;
 
   // Update current player display
   document.getElementById("currentPlayerDisplay").textContent = currentPlayer.name;
 
-  // Update steps display
-  const steps = gameState.playerSteps[gameState.playerName] || 0;
-  document.getElementById("stepsDisplay").textContent = steps;
-
-  // Hide role name for everyone
-  document.getElementById("roleName").textContent = "Hidden";
-
+  const isMyTurn = currentPlayer.name === gameState.playerName;
+  document.getElementById("showQuestionBtn").disabled = !isMyTurn;
   // Show answer if player is Fakemaker and not unmasked
   if (gameState.playerRole === "Fakemaker" && !gameState.fakemakerUnmasked) {
     document.getElementById("answerInfo").classList.remove("hidden");
@@ -708,7 +554,7 @@ function updateGameDisplay() {
 
   // Show/hide turn info based on whether it's the player's turn
   const yourTurnInfo = document.getElementById("yourTurnInfo");
-  if (currentPlayer.name === gameState.playerName) {
+  if (isMyTurn) {
     yourTurnInfo.style.display = "block";
   } else {
     yourTurnInfo.style.display = "none";
@@ -716,7 +562,15 @@ function updateGameDisplay() {
 }
 
 // Show question
-function showQuestion() {
+async function showQuestion() {
+  // This function is now triggered by the current player clicking "Show Question" button
+  // It sets the activeScreen to "questionScreen" for all players
+  gameState.activeScreen = "questionScreen";
+  await saveGameToFirebase();
+  // The actual rendering will be done by renderQuestionContentAndButtonStates via Firebase listener
+}
+
+function renderQuestionContentAndButtonStates() {
   const currentQuestion = gameState.questions[gameState.currentQuestionIndex];
 
   document.getElementById("questionNumber").textContent = `Vraag ${gameState.currentQuestionIndex + 1}`;
@@ -742,7 +596,20 @@ function showQuestion() {
     document.getElementById("externalActionContainer").classList.remove("hidden");
   }
 
-  showScreen("questionScreen");
+  // Enable/disable answer buttons based on whose turn it is
+  const isCurrentPlayerAnswering = gameState.players[gameState.currentPlayerIndex]?.name === gameState.playerName;
+  document.getElementById("trueBtn").disabled = !isCurrentPlayerAnswering;
+  document.getElementById("falseBtn").disabled = !isCurrentPlayerAnswering;
+  // Add for multiple choice if any:
+  // document.querySelectorAll('.answer-button.option').forEach(btn => btn.disabled = !isCurrentPlayerAnswering);
+
+  // Show answer info for Fakemaker (already in updateGameDisplay, but good to have here too for question screen context)
+  if (gameState.playerRole === "Fakemaker" && !gameState.fakemakerUnmasked) {
+    document.getElementById("answerInfo").classList.remove("hidden");
+    document.getElementById("correctAnswer").textContent = currentQuestion.answer ? "Echt" : "Fake";
+  } else {
+    document.getElementById("answerInfo").classList.add("hidden");
+  }
 }
 
 // Submit answer
@@ -782,12 +649,15 @@ async function submitAnswer(answer) {
   // Display result
   document.getElementById("resultMessage").textContent = resultMessage;
   document.getElementById("stepsDisplayResult").textContent = gameState.playerSteps[gameState.playerName];
+  
+  gameState.lastResult = { title: isCorrect ? "Correct!" : "Wrong!", message: resultMessage };
+  gameState.activeScreen = "resultScreen";
 
   // Save to Firebase
   try {
     console.log("Attempting to save answer to Firebase:", gameState.gameCode);
     await saveGameToFirebase();
-    showScreen("resultScreen");
+    // Firebase listener will show the result screen for all players
   } catch (error) {
     console.error("Error saving answer:", error);
     alert("Error saving your answer. Please try again.");
@@ -804,24 +674,22 @@ async function nextTurn() {
   // Move to next question if we've gone through all players
   if (gameState.currentPlayerIndex === 0) {
     gameState.currentQuestionIndex++;
-
-    // Check if game is over
+    // LOOPING QUESTIONS: If out of questions, loop back to the first one.
     if (gameState.currentQuestionIndex >= gameState.questions.length) {
-      endGame();
-      return;
+      gameState.currentQuestionIndex = 0; 
+      // Note: An actual win condition (e.g. score, unmasking) would call endGame()
+      // and potentially override this loop. For now, we always loop.
     }
   }
+
+  gameState.activeScreen = "gameScreen"; // Transition to game screen for next turn
 
   // Save to Firebase
   try {
     console.log("Attempting to save next turn to Firebase:", gameState.gameCode);
     await saveGameToFirebase();
+    // Firebase listener will handle UI updates for all clients
 
-    // Update display
-    updateGameDisplay();
-
-    // Show game screen
-    showScreen("gameScreen");
   } catch (error) {
     console.error("Error updating turn:", error);
     alert("Error updating turn. Please try again.");
@@ -829,7 +697,11 @@ async function nextTurn() {
 }
 
 // End game
-function endGame() {
+async function endGame() {
+  // This function should be called when a definitive win/loss condition is met
+  // (e.g., Fakemaker unmasked, or a player reaches a target score).
+  // For "Keep the game going", this function is called less, as questions loop.
+
   // Find winner (player with most steps)
   let maxSteps = -1;
   let winners = [];
@@ -843,30 +715,58 @@ function endGame() {
     }
   });
 
-  // Display winner
-  document.getElementById("resultTitle").textContent = "Game Over!";
-
+  let resultTitle = "Game Over!";
+  let resultMessageText = "";
+  
   if (winners.length === 1) {
-    document.getElementById("resultMessage").textContent = `${winners[0]} wins with ${maxSteps} steps!`;
+    resultMessageText = `${winners[0]} wins with ${maxSteps} steps!`;
+  } else if (winners.length > 1) {
+    resultMessageText = `It's a tie between ${winners.join(" and ")} with ${maxSteps} steps!`;
+    // Per "game does not end when there's a tie", if we reach here due to a tie,
+    // we might want to *not* end, but continue.
+    // However, if endGame() is called due to an explicit win condition check that results in a tie,
+    // it's a design decision whether that specific tie ends the game or forces continuation.
+    // For now, if endGame() is called, it concludes. Looping questions prevents ending *just* due to ties from running out of questions.
   } else {
-    document.getElementById("resultMessage").textContent = `It's a tie between ${winners.join(" and ")} with ${maxSteps} steps!`;
+    resultMessageText = "No winner could be determined.";
   }
 
-  // Change button text
+  gameState.lastResult = { title: resultTitle, message: resultMessageText };
+  gameState.activeScreen = "resultScreen"; // Show final results
+  gameState.gameEnded = true; // Add a flag to indicate the game has truly ended
+
+  await saveGameToFirebase();
+  // Firebase listener will update UI. On resultScreen, newGameBtn will be primary.
+  // The renderResultScreenContent function might hide nextTurnBtn if gameState.gameEnded is true.
   document.getElementById("nextTurnBtn").style.display = "none";
   document.getElementById("newGameBtn").textContent = "Back to Start";
-
-  showScreen("resultScreen");
 }
 
-  // Stop listening for updates
-  stopListeningForUpdates();
+// Reset game
+function resetGame() {
+  // Stop listening for updates for the current game, if there is one.
+  // This must happen BEFORE gameState.gameCode is cleared.
+  if (gameState.gameCode) {
+    stopListeningForUpdates();
+  }
 
-  // Hide the global AR button
-  const globalArBtn = document.getElementById("globalScanHiroBtn");
-  if (globalArBtn) globalArBtn.classList.add("hidden");
+  // Clear game state
+  gameState.gameCode = "";
+  gameState.players = [];
+  gameState.currentPlayerIndex = 0;
+  gameState.currentQuestionIndex = 0;
+  gameState.fakemakerName = "";
+  // gameState.questions = []; // Questions are loaded once on DOMContentLoaded, keep them.
+  gameState.fakemakerUnmasked = false;
+  gameState.playerName = "";
+  gameState.playerRole = "";
+  gameState.playerSteps = {};
+  gameState.gameStarted = false;
+  gameState.activeScreen = "startScreen";
+  gameState.lastResult = { title: "", message: "" };
+  gameState.gameEnded = false;
 
-  // Show start screen
+  // No need to save to Firebase, as this is a local reset to main menu.
   showScreen("startScreen");
 }
 
@@ -886,7 +786,10 @@ async function saveGameToFirebase() {
     playerSteps: gameState.playerSteps || {},
     questions: gameState.questions || [],
     gameStarted: gameState.gameStarted === true,
+    activeScreen: gameState.activeScreen || "gameScreen",
+    lastResult: gameState.lastResult || { title: "", message: "" },
     lastUpdated: firebase.database.ServerValue.TIMESTAMP,
+    gameEnded: gameState.gameEnded === true,
   };
 
   try {
@@ -939,20 +842,48 @@ function startListeningForUpdates() {
     gameState.playerSteps = data.playerSteps || gameState.playerSteps;
     gameState.questions = data.questions || gameState.questions;
     gameState.gameStarted = data.gameStarted !== undefined ? data.gameStarted : gameState.gameStarted;
+    gameState.activeScreen = data.activeScreen || gameState.activeScreen; // Keep local if not in Firebase yet
+    gameState.lastResult = data.lastResult || gameState.lastResult;
+    gameState.gameEnded = data.gameEnded !== undefined ? data.gameEnded : gameState.gameEnded;
 
     // Update UI based on game state
-    if (gameState.gameStarted) {
-      // If game has started and we're on role confirmation screen, move to game screen
-      if (document.getElementById("roleConfirmationScreen").classList.contains("active")) {
-        updateGameDisplay();
-        showScreen("gameScreen");
-      } else if (document.getElementById("gameScreen").classList.contains("active")) {
-        // Update game display if we're already on game screen
-        updateGameDisplay();
+    if (gameState.activeScreen && document.getElementById(gameState.activeScreen)) {
+      showScreen(gameState.activeScreen); // This just makes the screen div visible
+
+      // Now, specific rendering/logic for each screen
+      switch (gameState.activeScreen) {
+        case "gameScreen":
+          updateGameDisplay();
+          break;
+        case "questionScreen":
+          renderQuestionContentAndButtonStates();
+          break;
+        case "resultScreen":
+          document.getElementById("resultTitle").textContent = gameState.lastResult.title || "Resultaat";
+          document.getElementById("resultMessage").textContent = gameState.lastResult.message || "";
+          // Update steps display for the current player viewing the screen, or for the player who last answered.
+          // For simplicity, let's show the viewing player's steps.
+          document.getElementById("stepsDisplayResult").textContent = gameState.playerSteps[gameState.playerName] || 0;
+          
+          if (gameState.gameEnded) {
+            document.getElementById("nextTurnBtn").style.display = "none";
+            document.getElementById("newGameBtn").textContent = "Back to Start";
+            document.getElementById("newGameBtn").style.display = "block";
+          } else {
+            document.getElementById("nextTurnBtn").style.display = "block";
+            document.getElementById("newGameBtn").style.display = "none"; // Hide "New Game" button if game not ended
+            // document.getElementById("newGameBtn").textContent = "New Game"; // Text content doesn't matter if hidden
+          }
+          break;
+        case "hostGameScreen":
+          updatePlayerList();
+          break;
+        case "roleConfirmationScreen":
+          // If game has started (by host action) and this player is not host,
+          // and they are on role confirm, they should have been moved to gameScreen.
+          // The continueAfterRole() function handles this by setting gameState.activeScreen.
+          break;
       }
-    } else if (document.getElementById("hostGameScreen").classList.contains("active")) {
-      // Update player list if we're on host screen
-      updatePlayerList();
     }
   }, (error) => {
     console.error("Firebase real-time listener error:", error);
@@ -977,15 +908,17 @@ function startListeningForUpdates() {
 
 // Stop listening for updates
 function stopListeningForUpdates() {
-  if (!gameState.gameCode) return;
+  if (!gameState.gameCode) {
+    console.log("stopListeningForUpdates: No active game code to stop listeners for.");
+    return;
+  }
 
   const gameRef = database.ref(`games/${gameState.gameCode}`);
-  gameRef.off();
-  console.log("Stopped listening for Firebase game updates.");
+  gameRef.off("value"); // Detach specific 'value' listeners for this game path
+  console.log(`Stopped listening for Firebase game updates on ${gameState.gameCode}.`);
 
-  const connectedRef = database.ref(".info/connected");
-  connectedRef.off();
-  console.log("Stopped listening for Firebase connection status.");
+  // The .info/connected listener is global and should not be stopped here.
+  // It's managed by its own .on() call in startListeningForUpdates and typically persists.
 }
 
 // Check for game code in URL
@@ -1069,4 +1002,61 @@ function updateConnectionStatus(status) {
       indicator.classList.add("offline");
       statusText.textContent = "Onbekend";
   }
+}
+
+
+
+
+
+// AR Functionality
+let arCurrentIndex = 0;
+const arModels = [
+  { primitive: "box", color: "red", scale: "1 1 1" },
+  { primitive: "sphere", color: "blue", scale: "1 1 1" },
+  { primitive: "cone", color: "green", scale: "1 1 1" }
+];
+
+function changeArModel() {
+  const arObject = document.getElementById("dynamicObject");
+  if (arObject) { // Check if the AR object exists on the current screen
+    const model = arModels[arCurrentIndex];
+    arObject.setAttribute("geometry", `primitive: ${model.primitive}`);
+    arObject.setAttribute("material", `color: ${model.color}`);
+    arObject.setAttribute("scale", model.scale);
+    arCurrentIndex = (arCurrentIndex + 1) % arModels.length;
+  }
+}
+
+// Function to toggle AR camera container
+function toggleARCamera() {
+    const arContainer = document.getElementById("arContainer");
+    const arToggleBtn = document.getElementById("arCameraToggleBtn");
+    
+    if (arContainer.classList.contains("hidden")) {
+        // Show AR container
+        arContainer.classList.remove("hidden");
+        arToggleBtn.textContent = "✕";
+        arToggleBtn.style.backgroundColor = "#f44336";
+        
+        // Initialize AR when showing for the first time
+        initializeARContainer();
+    } else {
+        // Hide AR container
+        arContainer.classList.add("hidden");
+        arToggleBtn.textContent = "📷";
+        arToggleBtn.style.backgroundColor = "#4CAF50";
+    }
+}
+
+// Function to initialize AR in the small container
+function initializeARContainer() {
+    const marker = document.querySelector("#arContainer a-marker");
+    if (marker) {
+        marker.addEventListener("markerFound", () => {
+            console.log("Marker found in AR container, changing AR model.");
+            changeArModel();
+        });
+    } else {
+        console.log("AR Marker not found in container.");
+    }
 }

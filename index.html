@@ -34,7 +34,7 @@
             <div class="form-group">
                 <input type="text" id="hostNameInput" placeholder="Jouw Naam" class="input-field">
                 <button id="createGameBtn" class="primary-button">Maak Spel</button>
-                <button id="backFromHostBtn" class="secondary-button" onclick="showScreen('startScreen')">Terug</button>
+                <button id="backFromHostBtn" class="secondary-button">Terug</button>
             </div>
         </div>
 
@@ -46,7 +46,7 @@
                 <input type="text" id="playerNameInput" placeholder="Jouw Naam" class="input-field">
                 <input type="text" id="gameCodeInput" placeholder="Spelcode" class="input-field" maxlength="5">
                 <button id="submitJoinBtn" class="primary-button">Deelnemen</button>
-                <button id="backFromJoinBtn" class="secondary-button" onclick="showScreen('startScreen')">Terug</button>
+                <button id="backFromJoinBtn" class="secondary-button">Terug</button>
                 <p id="joinErrorMessage" class="error-message hidden"></p>
             </div>
         </div>
@@ -79,7 +79,7 @@
             <div class="game-code">
                 <span id="gameCodeDisplay"></span>
             </div>
-            <button id="copyCodeBtn" class="secondary-button" onclick="copyToClipboard(document.getElementById('gameCodeDisplay').textContent)">Code Kopiëren</button>
+            <button id="copyCodeBtn" class="secondary-button">Code Kopiëren</button>
             <button id="shareGameBtn" class="secondary-button">Spellink Delen</button>
             
             <p id="shareSuccessMessage" class="success-message hidden"></p>
@@ -95,8 +95,6 @@
             <div class="game-header">
                 <div class="player-info">
                     <p>Huidige Speler: <span id="currentPlayerDisplay" class="highlight"></span></p>
-                    <p>Jouw Rol: <span id="roleName" class="highlight"></span></p>
-                    <p>Jouw Stappen: <span id="stepsDisplay" class="highlight">0</span></p>
                 </div>
                 <div id="answerInfo" class="answer-info hidden">
                     <p>Juiste Antwoord: <span id="correctAnswer" class="highlight"></span></p>
@@ -105,7 +103,10 @@
             
             <div id="yourTurnInfo" class="your-turn-info">
                 <p>Het is jouw beurt!</p>
-                <button id="showQuestionBtn" class="primary-button">Toon Vraag</button>
+                <div style="display: flex; justify-content: center; align-items: center; gap: 10px;">
+                    <button id="showQuestionBtn" class="primary-button">Toon Vraag</button>
+                    <button id="scanHiroGameBtn" class="secondary-button">Scan Hiro</button>
+                </div>
             </div>
             
             <div class="connection-status">
@@ -158,21 +159,16 @@
             <button id="nextTurnBtn" class="primary-button">Volgende Beurt</button>
             <button id="newGameBtn" class="secondary-button">Nieuw Spel</button>
         </div>
-        
+
         <!-- AR View Container (Overlay) -->
         <div id="arViewContainer" class="ar-view-overlay">
-            <button id="closeArViewBtn" class="ar-close-button">&times;</button>
             <!-- A-Frame scene will be dynamically inserted here by script.js -->
-            <div class="ar-overlay-buttons">
-                <button id="arTrueBtn" class="answer-button true">Echt</button>
-                <button id="arFalseBtn" class="answer-button false">Nep</button>
-            </div>
         </div>
 
         <!-- Global AR Button - Initially hidden -->
         <button id="globalScanHiroBtn" class="global-ar-button hidden">scan Hiro</button>
     </div>
 
-    <script src="script.js"></script>
+    <script src="complete_fixed_script.js"></script>
 </body>
 </html>
