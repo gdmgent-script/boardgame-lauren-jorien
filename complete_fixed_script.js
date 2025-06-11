@@ -12,6 +12,8 @@ const gameState = {
   playerName: "",
   playerRole: "",
   playerSteps: {},
+  activeScreen: "startScreen", // To control which screen is globally active
+  lastResult: { title: "", message: "" }, // To store result message for all players
 };
 
 // Role codes
@@ -202,20 +204,22 @@ async function createGame() {
   gameState.playerSteps[hostName] = 0;
 
   try {
+    gameState.activeScreen = "roleCodeScreen"; // Host proceeds to role code screen
+
     // Save game to Firebase
     console.log("Attempting to save new game to Firebase:", gameState.gameCode);
     await saveGameToFirebase();
 
     // Start listening for updates (if not already started)
     startListeningForUpdates();
-
     // Display game code
     document.getElementById("gameCodeDisplay").textContent = gameState.gameCode;
 
-    // Modified: Direct host to role code screen instead of host game screen
-    showScreen("roleCodeScreen");
+    // The Firebase listener will now handle showing the "roleCodeScreen"
+    // based on the activeScreen property saved to Firebase.
   } catch (error) {
     console.error("Error creating game:", error);
+    gameState.activeScreen = "startScreen"; // Revert on error
     alert("Kon geen spel aanmaken. Probeer het opnieuw.");
   } finally {
     // Reset button
@@ -231,16 +235,23 @@ async function joinGame() {
     .getElementById("gameCodeInput")
     .value.trim()
     .toUpperCase();
+  const roleCode = document.getElementById("playerRoleCodeInput").value.trim();
 
-  if (!playerName || !gameCode) {
-    showError("joinErrorMessage", "Voer je naam en spelcode in");
+  if (!playerName || !gameCode || !roleCode) {
+    showError("joinErrorMessage", "Voer je naam, spelcode en rolcode in");
     return;
   }
 
   playerName = sanitizeFirebaseKey(playerName);
   if (!playerName) {
-    // The showError function handles hiding the message after a timeout.
-    showError("joinErrorMessage", "Voer je naam en spelcode in");
+    showError("joinErrorMessage", "Voer je naam, spelcode en rolcode in");
+    return;
+  }
+
+  // Validate role code
+  const roleEntry = roleCodes.find((r) => r.code === roleCode);
+  if (!roleEntry) {
+    showError("joinErrorMessage", "Ongeldige rolcode");
     return;
   }
 
@@ -273,6 +284,7 @@ async function joinGame() {
     // Load game state
     gameState.gameCode = gameCode;
     gameState.playerName = playerName;
+    gameState.playerRole = roleEntry.role;
     gameState.players = gameData.players || [];
     gameState.currentPlayerIndex = gameData.currentPlayerIndex || 0;
     gameState.currentQuestionIndex = gameData.currentQuestionIndex || 0;
@@ -282,10 +294,10 @@ async function joinGame() {
     gameState.questions = gameData.questions || [];
     gameState.gameStarted = gameData.gameStarted || false;
 
-    // Add new player
+    // Add new player with role already assigned
     const newPlayer = {
       name: playerName,
-      role: "",
+      role: roleEntry.role,
       isHost: false,
       steps: 0,
     };
@@ -295,15 +307,45 @@ async function joinGame() {
     // Initialize player steps
     gameState.playerSteps[playerName] = 0;
 
+    // If this is the Fakemaker, record their name
+    if (roleEntry.role === "Fakemaker") {
+      gameState.fakemakerName = playerName;
+    }
+
     // Save updated game state
     console.log("Attempting to save updated game state to Firebase after join:", gameState.gameCode);
+    
+    // Don't change activeScreen globally - let each player manage their own screen state
     await saveGameToFirebase();
 
     // Start listening for updates
     startListeningForUpdates();
 
-    // Show role code screen
-    showScreen("roleCodeScreen");
+    // Check if game has already started
+    if (gameState.gameStarted) {
+      // Game already started, join immediately
+      gameState.activeScreen = "gameScreen";
+      showScreen("gameScreen");
+    } else {
+      // Show waiting screen
+      gameState.activeScreen = "roleConfirmationScreen";
+      showScreen("roleConfirmationScreen");
+      
+      // Display role
+      document.getElementById("playerRoleDisplay").textContent = roleEntry.role;
+
+      // Set role instructions
+      if (roleEntry.role === "Fakemaker") {
+        document.getElementById("roleInstructions").textContent = 
+          "Als Fakemaker zie je de juiste antwoorden. Probeer niet op te vallen tussen de Factcheckers! Wacht tot de host het spel start.";
+      } else {
+        document.getElementById("roleInstructions").textContent = 
+          "Als Factchecker probeer je te ontdekken wie de Fakemaker is door hun antwoorden te observeren. Wacht tot de host het spel start.";
+      }
+      
+      // Hide the continue button and show waiting message
+      document.getElementById("continueAfterRoleBtn").style.display = "none";
+    }
   } catch (error) {
     console.error("Error joining game:", error);
     showError("joinErrorMessage", "Fout bij deelnemen aan spel. Probeer het opnieuw.");
@@ -370,16 +412,13 @@ async function startGame() {
   try {
     // Update game state
     gameState.gameStarted = true;
+    gameState.activeScreen = "gameScreen"; // Transition all players to the game screen
 
     // Save to Firebase
     console.log("Attempting to save game start to Firebase:", gameState.gameCode);
     await saveGameToFirebase();
+    // Firebase listener will handle showing the screen and updating display
 
-    // Update display
-    updateGameDisplay();
-
-    // Show game screen
-    showScreen("gameScreen");
   } catch (error) {
     console.error("Error starting game:", error);
     alert("Failed to start game. Please try again.");
@@ -443,6 +482,7 @@ async function submitRoleCode() {
         "Als Factchecker probeer je te ontdekken wie de Fakemaker is door hun antwoorden te observeren.";
     }
 
+    gameState.activeScreen = "roleConfirmationScreen";
     // Show role confirmation screen
     showScreen("roleConfirmationScreen");
   } catch (error) {
@@ -463,14 +503,18 @@ function continueAfterRole() {
   )?.isHost;
 
   if (isHost) {
-    updatePlayerList();
-    showScreen("hostGameScreen");
+    gameState.activeScreen = "hostGameScreen";
+    // updatePlayerList(); // This will be handled by Firebase listener
+    // showScreen("hostGameScreen"); // This will be handled by Firebase listener
+    saveGameToFirebase(); // Ensure state change is saved
   } else {
     // Check if game has already started
     if (gameState.gameStarted) {
       // Game already started, join immediately
-      updateGameDisplay();
-      showScreen("gameScreen");
+      gameState.activeScreen = "gameScreen";
+      // updateGameDisplay(); // Firebase listener
+      // showScreen("gameScreen"); // Firebase listener
+      saveGameToFirebase(); // Ensure state change is saved
     } else {
       // Show waiting screen with clear message
       document.getElementById("roleInstructions").textContent = 
@@ -485,10 +529,13 @@ function continueAfterRole() {
 function updateGameDisplay() {
   const currentPlayer = gameState.players[gameState.currentPlayerIndex];
 
+  if (!currentPlayer) return;
+
   // Update current player display
   document.getElementById("currentPlayerDisplay").textContent = currentPlayer.name;
 
-
+  const isMyTurn = currentPlayer.name === gameState.playerName;
+  document.getElementById("showQuestionBtn").disabled = !isMyTurn;
   // Show answer if player is Fakemaker and not unmasked
   if (gameState.playerRole === "Fakemaker" && !gameState.fakemakerUnmasked) {
     document.getElementById("answerInfo").classList.remove("hidden");
@@ -500,7 +547,7 @@ function updateGameDisplay() {
 
   // Show/hide turn info based on whether it's the player's turn
   const yourTurnInfo = document.getElementById("yourTurnInfo");
-  if (currentPlayer.name === gameState.playerName) {
+  if (isMyTurn) {
     yourTurnInfo.style.display = "block";
   } else {
     yourTurnInfo.style.display = "none";
@@ -508,7 +555,15 @@ function updateGameDisplay() {
 }
 
 // Show question
-function showQuestion() {
+async function showQuestion() {
+  // This function is now triggered by the current player clicking "Show Question" button
+  // It sets the activeScreen to "questionScreen" for all players
+  gameState.activeScreen = "questionScreen";
+  await saveGameToFirebase();
+  // The actual rendering will be done by renderQuestionContentAndButtonStates via Firebase listener
+}
+
+function renderQuestionContentAndButtonStates() {
   const currentQuestion = gameState.questions[gameState.currentQuestionIndex];
 
   document.getElementById("questionNumber").textContent = `Vraag ${gameState.currentQuestionIndex + 1}`;
@@ -534,7 +589,20 @@ function showQuestion() {
     document.getElementById("externalActionContainer").classList.remove("hidden");
   }
 
-  showScreen("questionScreen");
+  // Enable/disable answer buttons based on whose turn it is
+  const isCurrentPlayerAnswering = gameState.players[gameState.currentPlayerIndex]?.name === gameState.playerName;
+  document.getElementById("trueBtn").disabled = !isCurrentPlayerAnswering;
+  document.getElementById("falseBtn").disabled = !isCurrentPlayerAnswering;
+  // Add for multiple choice if any:
+  // document.querySelectorAll('.answer-button.option').forEach(btn => btn.disabled = !isCurrentPlayerAnswering);
+
+  // Show answer info for Fakemaker (already in updateGameDisplay, but good to have here too for question screen context)
+  if (gameState.playerRole === "Fakemaker" && !gameState.fakemakerUnmasked) {
+    document.getElementById("answerInfo").classList.remove("hidden");
+    document.getElementById("correctAnswer").textContent = currentQuestion.answer ? "Echt" : "Fake";
+  } else {
+    document.getElementById("answerInfo").classList.add("hidden");
+  }
 }
 
 // Submit answer
@@ -574,12 +642,15 @@ async function submitAnswer(answer) {
   // Display result
   document.getElementById("resultMessage").textContent = resultMessage;
   document.getElementById("stepsDisplayResult").textContent = gameState.playerSteps[gameState.playerName];
+  
+  gameState.lastResult = { title: isCorrect ? "Correct!" : "Wrong!", message: resultMessage };
+  gameState.activeScreen = "resultScreen";
 
   // Save to Firebase
   try {
     console.log("Attempting to save answer to Firebase:", gameState.gameCode);
     await saveGameToFirebase();
-    showScreen("resultScreen");
+    // Firebase listener will show the result screen for all players
   } catch (error) {
     console.error("Error saving answer:", error);
     alert("Error saving your answer. Please try again.");
@@ -596,24 +667,22 @@ async function nextTurn() {
   // Move to next question if we've gone through all players
   if (gameState.currentPlayerIndex === 0) {
     gameState.currentQuestionIndex++;
-
-    // Check if game is over
+    // LOOPING QUESTIONS: If out of questions, loop back to the first one.
     if (gameState.currentQuestionIndex >= gameState.questions.length) {
-      endGame();
-      return;
+      gameState.currentQuestionIndex = 0; 
+      // Note: An actual win condition (e.g. score, unmasking) would call endGame()
+      // and potentially override this loop. For now, we always loop.
     }
   }
+
+  gameState.activeScreen = "gameScreen"; // Transition to game screen for next turn
 
   // Save to Firebase
   try {
     console.log("Attempting to save next turn to Firebase:", gameState.gameCode);
     await saveGameToFirebase();
+    // Firebase listener will handle UI updates for all clients
 
-    // Update display
-    updateGameDisplay();
-
-    // Show game screen
-    showScreen("gameScreen");
   } catch (error) {
     console.error("Error updating turn:", error);
     alert("Error updating turn. Please try again.");
@@ -621,7 +690,11 @@ async function nextTurn() {
 }
 
 // End game
-function endGame() {
+async function endGame() {
+  // This function should be called when a definitive win/loss condition is met
+  // (e.g., Fakemaker unmasked, or a player reaches a target score).
+  // For "Keep the game going", this function is called less, as questions loop.
+
   // Find winner (player with most steps)
   let maxSteps = -1;
   let winners = [];
@@ -635,20 +708,31 @@ function endGame() {
     }
   });
 
-  // Display winner
-  document.getElementById("resultTitle").textContent = "Game Over!";
-
+  let resultTitle = "Game Over!";
+  let resultMessageText = "";
+  
   if (winners.length === 1) {
-    document.getElementById("resultMessage").textContent = `${winners[0]} wins with ${maxSteps} steps!`;
+    resultMessageText = `${winners[0]} wins with ${maxSteps} steps!`;
+  } else if (winners.length > 1) {
+    resultMessageText = `It's a tie between ${winners.join(" and ")} with ${maxSteps} steps!`;
+    // Per "game does not end when there's a tie", if we reach here due to a tie,
+    // we might want to *not* end, but continue.
+    // However, if endGame() is called due to an explicit win condition check that results in a tie,
+    // it's a design decision whether that specific tie ends the game or forces continuation.
+    // For now, if endGame() is called, it concludes. Looping questions prevents ending *just* due to ties from running out of questions.
   } else {
-    document.getElementById("resultMessage").textContent = `It's a tie between ${winners.join(" and ")} with ${maxSteps} steps!`;
+    resultMessageText = "No winner could be determined.";
   }
 
-  // Change button text
+  gameState.lastResult = { title: resultTitle, message: resultMessageText };
+  gameState.activeScreen = "resultScreen"; // Show final results
+  gameState.gameEnded = true; // Add a flag to indicate the game has truly ended
+
+  await saveGameToFirebase();
+  // Firebase listener will update UI. On resultScreen, newGameBtn will be primary.
+  // The renderResultScreenContent function might hide nextTurnBtn if gameState.gameEnded is true.
   document.getElementById("nextTurnBtn").style.display = "none";
   document.getElementById("newGameBtn").textContent = "Back to Start";
-
-  showScreen("resultScreen");
 }
 
 // Reset game
@@ -664,11 +748,14 @@ function resetGame() {
   gameState.playerRole = "";
   gameState.playerSteps = {};
   gameState.gameStarted = false;
+  gameState.activeScreen = "startScreen";
+  gameState.lastResult = { title: "", message: "" };
+  gameState.gameEnded = false;
 
   // Stop listening for updates
   stopListeningForUpdates();
 
-  // Show start screen
+  // No need to save to Firebase, as this is a local reset to main menu.
   showScreen("startScreen");
 }
 
@@ -688,7 +775,10 @@ async function saveGameToFirebase() {
     playerSteps: gameState.playerSteps || {},
     questions: gameState.questions || [],
     gameStarted: gameState.gameStarted === true,
+    activeScreen: gameState.activeScreen || "gameScreen",
+    lastResult: gameState.lastResult || { title: "", message: "" },
     lastUpdated: firebase.database.ServerValue.TIMESTAMP,
+    gameEnded: gameState.gameEnded === true,
   };
 
   try {
@@ -741,20 +831,57 @@ function startListeningForUpdates() {
     gameState.playerSteps = data.playerSteps || gameState.playerSteps;
     gameState.questions = data.questions || gameState.questions;
     gameState.gameStarted = data.gameStarted !== undefined ? data.gameStarted : gameState.gameStarted;
+    gameState.lastResult = data.lastResult || gameState.lastResult;
+    gameState.gameEnded = data.gameEnded !== undefined ? data.gameEnded : gameState.gameEnded;
+
+    // Only update activeScreen if it's a significant game state change (like game starting)
+    // Don't override local screen state for individual player flows
+    if (data.gameStarted && gameState.gameStarted) {
+      gameState.activeScreen = "gameScreen";
+    } else if (data.activeScreen && (data.activeScreen === "questionScreen" || data.activeScreen === "resultScreen")) {
+      // Allow question and result screens to be synchronized across all players
+      gameState.activeScreen = data.activeScreen;
+    }
+    // For other screens (roleCodeScreen, hostGameScreen, etc.), keep local state
 
     // Update UI based on game state
-    if (gameState.gameStarted) {
-      // If game has started and we're on role confirmation screen, move to game screen
-      if (document.getElementById("roleConfirmationScreen").classList.contains("active")) {
-        updateGameDisplay();
-        showScreen("gameScreen");
-      } else if (document.getElementById("gameScreen").classList.contains("active")) {
-        // Update game display if we're already on game screen
-        updateGameDisplay();
+    if (gameState.activeScreen && document.getElementById(gameState.activeScreen)) {
+      showScreen(gameState.activeScreen); // This just makes the screen div visible
+
+      // Now, specific rendering/logic for each screen
+      switch (gameState.activeScreen) {
+        case "gameScreen":
+          updateGameDisplay();
+          break;
+        case "questionScreen":
+          renderQuestionContentAndButtonStates();
+          break;
+        case "resultScreen":
+          document.getElementById("resultTitle").textContent = gameState.lastResult.title || "Resultaat";
+          document.getElementById("resultMessage").textContent = gameState.lastResult.message || "";
+          // Update steps display for the current player viewing the screen, or for the player who last answered.
+          // For simplicity, let's show the viewing player's steps.
+          document.getElementById("stepsDisplayResult").textContent = gameState.playerSteps[gameState.playerName] || 0;
+          
+          if (gameState.gameEnded) {
+            document.getElementById("nextTurnBtn").style.display = "none";
+            document.getElementById("newGameBtn").textContent = "Back to Start";
+            document.getElementById("newGameBtn").style.display = "block";
+          } else {
+            document.getElementById("nextTurnBtn").style.display = "block";
+            document.getElementById("newGameBtn").style.display = "block"; // Or "End Game"
+            document.getElementById("newGameBtn").textContent = "New Game"; // Or appropriate text
+          }
+          break;
+        case "hostGameScreen":
+          updatePlayerList();
+          break;
+        case "roleConfirmationScreen":
+          // If game has started (by host action) and this player is not host,
+          // and they are on role confirm, they should have been moved to gameScreen.
+          // The continueAfterRole() function handles this by setting gameState.activeScreen.
+          break;
       }
-    } else if (document.getElementById("hostGameScreen").classList.contains("active")) {
-      // Update player list if we're on host screen
-      updatePlayerList();
     }
   }, (error) => {
     console.error("Firebase real-time listener error:", error);
