@@ -160,11 +160,26 @@ function generateGameCode() {
   return code;
 }
 
+// Sanitize player names to be valid Firebase keys
+function sanitizeFirebaseKey(key) {
+  if (!key) return "";
+  // Replace forbidden characters with an underscore
+  let sanitizedKey = key.replace(/[.#$[\]]/g, "_");
+  // Ensure the key is not empty after sanitization (e.g. if name was just ".")
+  if (!sanitizedKey.trim()) return ""; 
+  return sanitizedKey;
+}
+
 // Create a new game as host
 async function createGame() {
-  const hostName = document.getElementById("hostNameInput").value.trim();
+  let hostName = document.getElementById("hostNameInput").value.trim();
   if (!hostName) {
     alert("Voer je naam in");
+    return;
+  }
+  hostName = sanitizeFirebaseKey(hostName);
+  if (!hostName) {
+    alert("De ingevoerde naam is ongeldig na het verwijderen van speciale tekens (zoals ., #, $, [, ]). Kies een andere naam.");
     return;
   }
 
@@ -211,13 +226,20 @@ async function createGame() {
 
 // Join an existing game
 async function joinGame() {
-  const playerName = document.getElementById("playerNameInput").value.trim();
+  let playerName = document.getElementById("playerNameInput").value.trim();
   const gameCode = document
     .getElementById("gameCodeInput")
     .value.trim()
     .toUpperCase();
 
   if (!playerName || !gameCode) {
+    showError("joinErrorMessage", "Voer je naam en spelcode in");
+    return;
+  }
+
+  playerName = sanitizeFirebaseKey(playerName);
+  if (!playerName) {
+    // The showError function handles hiding the message after a timeout.
     showError("joinErrorMessage", "Voer je naam en spelcode in");
     return;
   }
