@@ -299,16 +299,17 @@ async function joinGame() {
     // Initialize player steps
     gameState.playerSteps[playerName] = 0;
 
+    // Set the active screen BEFORE saving to Firebase
+    gameState.activeScreen = "roleCodeScreen";
+
     // Save updated game state
     console.log("Attempting to save updated game state to Firebase after join:", gameState.gameCode);
     await saveGameToFirebase();
 
     // Start listening for updates
     startListeningForUpdates();
-
-    gameState.activeScreen = "roleCodeScreen";
-    // Show role code screen
-    showScreen("roleCodeScreen");
+    // The Firebase listener will now handle showing the "roleCodeScreen"
+    // based on the activeScreen property saved to Firebase.
   } catch (error) {
     console.error("Error joining game:", error);
     showError("joinErrorMessage", "Fout bij deelnemen aan spel. Probeer het opnieuw.");
