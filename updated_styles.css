@@ -72,11 +72,9 @@ p {
 /* Button Styles */
 .button-container {
     display: flex;
-    flex-direction: row;
+    flex-direction: column;
     gap: 15px;
     margin-top: 30px;
-    justify-content: center;
-    flex-wrap: wrap;
 }
 
 button {
