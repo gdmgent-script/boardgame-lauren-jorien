@@ -325,17 +325,17 @@ async function joinGame() {
     // Initialize player steps
     gameState.playerSteps[playerName] = 0;
 
-    // Set the active screen BEFORE saving to Firebase
-    gameState.activeScreen = "roleCodeScreen";
-
     // Save updated game state
+    // gameState.activeScreen is hier wat geladen werd vanuit Firebase (bijv. "hostGameScreen").
+    // We slaan de nieuwe speler op in de lijst, maar wijzigen niet de globale activeScreen.
     console.log("Attempting to save updated game state to Firebase after join:", gameState.gameCode);
     await saveGameToFirebase();
 
     // Start listening for updates
     startListeningForUpdates();
-    // The Firebase listener will now handle showing the "roleCodeScreen"
-    // based on the activeScreen property saved to Firebase.
+
+    // Voor deze toetredende speler, navigeer lokaal naar het rolcodescherm.
+    showScreen("roleCodeScreen");
   } catch (error) {
     console.error("Error joining game:", error);
     showError("joinErrorMessage", "Fout bij deelnemen aan spel. Probeer het opnieuw.");
@@ -855,8 +855,8 @@ function startListeningForUpdates() {
             document.getElementById("newGameBtn").style.display = "block";
           } else {
             document.getElementById("nextTurnBtn").style.display = "block";
-            document.getElementById("newGameBtn").style.display = "block"; // Or "End Game"
-            document.getElementById("newGameBtn").textContent = "New Game"; // Or appropriate text
+            document.getElementById("newGameBtn").style.display = "none"; // Hide "New Game" button if game not ended
+            // document.getElementById("newGameBtn").textContent = "New Game"; // Text content doesn't matter if hidden
           }
           break;
         case "hostGameScreen":
