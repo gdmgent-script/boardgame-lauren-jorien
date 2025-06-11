@@ -34,20 +34,19 @@
             <div class="form-group">
                 <input type="text" id="hostNameInput" placeholder="Jouw Naam" class="input-field">
                 <button id="createGameBtn" class="primary-button">Maak Spel</button>
-                <button id="backFromHostBtn" class="secondary-button" onclick="showScreen(\'startScreen\')">Terug</button>
+                <button id="backFromHostBtn" class="secondary-button" onclick="showScreen('startScreen')">Terug</button>
             </div>
         </div>
 
         <!-- Join Game Screen -->
         <div id="joinGameScreen" class="screen">
             <h1>Deelnemen aan Spel</h1>
-            <p>Voer je naam, spelcode en rolcode in</p>
+            <p>Voer je naam en de spelcode in</p>
             <div class="form-group">
                 <input type="text" id="playerNameInput" placeholder="Jouw Naam" class="input-field">
                 <input type="text" id="gameCodeInput" placeholder="Spelcode" class="input-field" maxlength="5">
-                <input type="text" id="playerRoleCodeInput" placeholder="Rolcode" class="input-field" maxlength="4">
                 <button id="submitJoinBtn" class="primary-button">Deelnemen</button>
-                <button id="backFromJoinBtn" class="secondary-button" onclick="showScreen(\'startScreen\')">Terug</button>
+                <button id="backFromJoinBtn" class="secondary-button" onclick="showScreen('startScreen')">Terug</button>
                 <p id="joinErrorMessage" class="error-message hidden"></p>
             </div>
         </div>
@@ -80,7 +79,7 @@
             <div class="game-code">
                 <span id="gameCodeDisplay"></span>
             </div>
-            <button id="copyCodeBtn" class="secondary-button" onclick="copyToClipboard(document.getElementById(\'gameCodeDisplay\').textContent)">Code Kopiëren</button>
+            <button id="copyCodeBtn" class="secondary-button" onclick="copyToClipboard(document.getElementById('gameCodeDisplay').textContent)">Code Kopiëren</button>
             <button id="shareGameBtn" class="secondary-button">Spellink Delen</button>
             
             <p id="shareSuccessMessage" class="success-message hidden"></p>
@@ -128,7 +127,7 @@
             <div id="videoContainer" class="media-container hidden">
                 <video id="questionVideo" controls>
                     <source id="videoSource" src="#" type="video/mp4">
-                    Je browser ondersteunt geen video\'s.
+                    Je browser ondersteunt geen video's.
                 </video>
             </div>
             
@@ -157,10 +156,8 @@
             <p id="resultMessage"></p>
             <p>Jouw stappen: <span id="stepsDisplayResult" class="highlight">0</span></p>
             <p id="stepChange" class="highlight"></p>
-            <div class="button-container">
-                <button id="nextTurnBtn" class="primary-button">Volgende Beurt</button>
-                <button id="scanHiroResultBtn" class="secondary-button">Scan Hiro</button>
-            </div>
+            <button id="nextTurnBtn" class="primary-button">Volgende Beurt</button>
+            <button id="newGameBtn" class="secondary-button">Nieuw Spel</button>
         </div>
 
         <!-- AR View Container (Overlay) -->
@@ -175,5 +172,3 @@
     <script src="complete_fixed_script.js"></script>
 </body>
 </html>
-
-
