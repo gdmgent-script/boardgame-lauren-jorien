@@ -435,27 +435,27 @@ function showQuestion() {
 
   const question = gameState.questions[gameState.currentQuestionIndex];
   
-  // Update question display - remove "vraag X:" prefix if present
+  // Update question display
   let questionTitle = `Vraag ${gameState.currentQuestionIndex + 1}`;
   document.getElementById("questionNumber").textContent = questionTitle;
   document.getElementById("questionContent").textContent = question.content;
 
+  // Determine if it's this player's turn
+  const currentPlayer = gameState.players[gameState.currentPlayerIndex];
+  const isMyTurn = currentPlayer && currentPlayer.name === gameState.playerName;
+
   // Handle different question types
   if (question.type === "multiple_choice") {
-    // Show multiple choice buttons
     document.getElementById("trueFalseButtons").classList.add("hidden");
     document.getElementById("multipleChoiceButtons").classList.remove("hidden");
-    
-    // Set up options
     question.options.forEach((option, index) => {
       const button = document.getElementById(`option${index}`);
       if (button) {
         button.textContent = option;
         button.style.display = "block";
+        button.disabled = !isMyTurn; // <-- Only enable for current player
       }
     });
-    
-    // Hide unused option buttons
     for (let i = question.options.length; i < 4; i++) {
       const button = document.getElementById(`option${i}`);
       if (button) {
@@ -463,9 +463,17 @@ function showQuestion() {
       }
     }
   } else {
-    // Show true/false buttons for image/video questions
     document.getElementById("trueFalseButtons").classList.remove("hidden");
     document.getElementById("multipleChoiceButtons").classList.add("hidden");
+    // Enable/disable true/false buttons
+    document.getElementById("trueBtn").disabled = !isMyTurn;
+    document.getElementById("falseBtn").disabled = !isMyTurn;
+  }
+
+  // Optionally, visually indicate if it's not your turn
+  const yourTurnInfo = document.getElementById("yourTurnInfo");
+  if (yourTurnInfo) {
+    yourTurnInfo.style.display = isMyTurn ? "block" : "none";
   }
 
   // Handle media content
