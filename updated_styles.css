@@ -450,309 +450,94 @@ button:disabled {
     }
 }
 
-/* AR View Overlay Styles */
-.ar-view-overlay {
-    display: none; /* Hidden by default */
+
+/* AR Camera Icon and Container Styles */
+.ar-camera-toggle-button {
     position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: auto; /* Adjusted by content, or set fixed like 280px */
-    min-height: 220px; /* Minimum height to accommodate camera and buttons */
-    background-color: rgba(30, 30, 30, 0.85); /* Darker semi-transparent background */
-    border-bottom: 2px solid #ff6b6b;
-    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
-    z-index: 1000;  /* Ensure it's on top of other content */
-    /* overflow: hidden; /* Can be problematic with fixed height a-scene, manage carefully */
-    display: flex; /* Use flexbox */
-    flex-direction: column;
-    align-items: center;
-    padding: 10px;
-    box-sizing: border-box;
-}
-
-.ar-view-overlay.active {
-    display: flex; /* Show when active */
-    animation: fadeIn 0.3s ease-out; /* Smooth appearance */
-}
-
-/* Style for the dynamically added a-scene */
-#arViewContainer > a-scene {
-    width: 80%; /* Or a fixed width */
-    max-width: 350px; /* Max width for the camera view */
-    height: 150px; /* Fixed height for the camera view part */
-    display: block;
-    margin-bottom: 10px; /* Space between camera view and buttons */
-    border: 1px solid #444; /* Optional border for the scene itself */
-}
-
-.ar-close-button {
-    position: absolute;
-    top: 8px;
-    right: 8px;
-    background: #ff6b6b; /* Red, matching theme */
-    color: white;
-    border: none;
+    bottom: 80px;
+    right: 20px;
+    width: 60px;
+    height: 60px;
     border-radius: 50%;
-    width: 30px;
-    height: 30px;
-    font-size: 20px;
-    line-height: 30px; /* Center the '×' */
-    text-align: center;
-    cursor: pointer;
-    z-index: 1001; /* Above the a-scene */
-    box-shadow: 0 2px 5px rgba(0,0,0,0.2);
-}
-
-/* Container for buttons within the AR overlay */
-.ar-overlay-buttons {
-    display: flex;
-    justify-content: center;
-    gap: 15px;
-    width: 100%;
-    margin-top: 5px; /* Space above buttons if a-scene is above */
-}
-
-.ar-overlay-buttons .answer-button {
-    padding: 10px 20px; /* Slightly smaller padding for these buttons */
-}
-
-/* Global AR Button Styles */
-.global-ar-button {
-    position: fixed;
-    top: 20px; /* Adjust as needed */
-    right: 20px; /* Adjust as needed */
-    background-color: #ff6b6b; /* Or your preferred color */
+    background-color: #4CAF50;
     color: white;
-    padding: 10px 15px;
-    border-radius: 50px; /* Match other buttons */
-    font-size: 0.9rem; /* Adjust as needed */
-    font-weight: bold;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
-    z-index: 990; /* Below AR overlay, above connection status if they overlap */
-}
-
-/* Ensure A-Frame canvas stays within its container */
-#arViewContainer a-scene canvas {
-    width: 100% !important;
-    height: 100% !important;
-    image-rendering: -moz-crisp-edges; /* Firefox */
-    image-rendering: -webkit-crisp-edges; /* Webkit (Chrome, Safari) */
-    image-rendering: pixelated; /* Nieuwere standaard, geeft scherpe pixels */
-    image-rendering: crisp-edges; /* Algemeen fallback voor scherpe randen */
-}
-
-/* Gameplay Buttons Styles */
-.gameplay-buttons {
-    margin: 20px 0;
-    padding: 20px;
-    background-color: rgba(255, 255, 255, 0.1);
-    border-radius: 15px;
-    border: 2px solid #4CAF50;
-}
-
-.main-actions {
-    display: flex;
-    justify-content: space-between;
-    gap: 15px;
-    margin-bottom: 15px;
-}
-
-.scan-hiro-button {
-    background-color: #ff6b6b;
-    color: white;
-    padding: 12px 24px;
-    border-radius: 50px;
-    font-size: 1.1rem;
-    font-weight: bold;
+    font-size: 24px;
     border: none;
     cursor: pointer;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
     transition: all 0.3s ease;
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
-    min-width: 120px;
-}
-
-.scan-hiro-button:hover {
-    background-color: #ff5252;
-    transform: translateY(-2px);
-    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.3);
-}
-
-.scan-hiro-button:active {
-    transform: translateY(0);
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-}
-
-.connect-button {
-    background-color: #666;
-    color: white;
-    padding: 8px 16px;
-    border-radius: 25px;
-    font-size: 0.9rem;
-    border: none;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    margin: 0 auto;
-}
-
-.connect-button::before {
-    content: "●";
-    color: #4CAF50;
-    font-size: 1.2rem;
-}
-
-/* Camera View Overlay Styles */
-.camera-view-overlay {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background-color: rgba(0, 0, 0, 0.8);
     z-index: 1000;
-    display: none; /* Hidden by default */
-    justify-content: center;
-    align-items: center;
-    animation: fadeIn 0.3s ease-out;
-}
-
-.camera-view {
-    background: linear-gradient(180deg, #ff6b6b 0%, #4b6cb7 100%);
-    border-radius: 15px;
-    padding: 20px;
-    max-width: 90%;
-    width: 400px;
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
-}
-
-.camera-header {
     display: flex;
-    justify-content: space-between;
     align-items: center;
-    margin-bottom: 20px;
+    justify-content: center;
 }
 
-.camera-header h3 {
-    color: white;
-    font-size: 1.5rem;
-    margin: 0;
-}
-
-.close-camera-button {
-    background: #ff4444;
-    color: white;
-    border: none;
-    border-radius: 50%;
-    width: 35px;
-    height: 35px;
-    font-size: 20px;
-    line-height: 35px;
-    text-align: center;
-    cursor: pointer;
-    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
-    transition: all 0.3s ease;
-}
-
-.close-camera-button:hover {
-    background: #ff2222;
+.ar-camera-toggle-button:hover {
+    background-color: #45a049;
     transform: scale(1.1);
 }
 
-.camera-display {
-    margin: 20px 0;
-    display: flex;
-    justify-content: center;
+.ar-camera-toggle-button:active {
+    transform: scale(0.95);
 }
 
-.camera-screen {
+.ar-container {
+    position: fixed;
+    bottom: 150px;
+    right: 20px;
     width: 300px;
     height: 200px;
-    background-color: white;
-    border-radius: 10px;
-    border: 3px solid #333;
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
-    position: relative;
-}
-
-.camera-screen::after {
-    content: "📷";
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    font-size: 3rem;
-    color: #ccc;
-}
-
-.camera-answer-buttons {
-    display: flex;
-    justify-content: space-around;
-    gap: 20px;
-    margin-top: 20px;
-}
-
-.camera-answer-buttons .answer-button {
-    background-color: #f44336;
-    color: white;
-    padding: 15px 30px;
-    font-size: 1.2rem;
-    min-width: 120px;
-    border-radius: 50px;
-    border: none;
-    cursor: pointer;
+    border-radius: 15px;
+    overflow: hidden;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+    border: 3px solid #4CAF50;
+    background-color: #000;
+    z-index: 999;
     transition: all 0.3s ease;
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
 }
 
-.camera-answer-buttons .answer-button:hover {
-    background-color: #d32f2f;
-    transform: translateY(-2px);
-    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.3);
+.ar-container.hidden {
+    display: none;
 }
 
-.camera-answer-buttons .answer-button:active {
-    transform: translateY(0);
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+.ar-container a-scene {
+    width: 100%;
+    height: 100%;
+    border-radius: 12px;
 }
 
-/* Mobile Responsive for Camera View */
-@media (max-width: 480px) {
-    .camera-view {
-        width: 95%;
-        padding: 15px;
+/* Responsive adjustments for AR elements */
+@media (max-width: 768px) {
+    .ar-camera-toggle-button {
+        width: 50px;
+        height: 50px;
+        font-size: 20px;
+        bottom: 70px;
+        right: 15px;
     }
     
-    .camera-screen {
+    .ar-container {
         width: 250px;
-        height: 150px;
+        height: 160px;
+        bottom: 130px;
+        right: 15px;
+    }
+}
+
+@media (max-width: 480px) {
+    .ar-camera-toggle-button {
+        width: 45px;
+        height: 45px;
+        font-size: 18px;
+        bottom: 60px;
+        right: 10px;
     }
     
-    .camera-screen::after {
-        font-size: 2rem;
-    }
-    
-    .camera-answer-buttons {
-        flex-direction: column;
-        gap: 15px;
-    }
-    
-    .camera-answer-buttons .answer-button {
-        width: 100%;
-        padding: 12px 24px;
-        font-size: 1rem;
-    }
-    
-    .main-actions {
-        flex-direction: column;
-        gap: 10px;
-    }
-    
-    .scan-hiro-button {
-        width: 100%;
+    .ar-container {
+        width: 200px;
+        height: 130px;
+        bottom: 110px;
+        right: 10px;
     }
 }
 
