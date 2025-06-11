@@ -728,8 +728,10 @@ async function nextTurn() {
   // Na elke ronde (als iedereen geweest is), ga naar de volgende vraag
   if (gameState.currentPlayerIndex === 0) {
     gameState.currentQuestionIndex++;
+    // Stop het spel als alle vragen geweest zijn
     if (gameState.currentQuestionIndex >= gameState.questions.length) {
-      gameState.currentQuestionIndex = 0; // Of: endGame() als je wilt stoppen
+      await endGame();
+      return;
     }
   }
 
