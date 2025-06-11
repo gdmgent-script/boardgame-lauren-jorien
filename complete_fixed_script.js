@@ -105,7 +105,6 @@ const gameState = {
   playerRole: "",
   activeScreen: "startScreen", // To control which screen is globally active
   lastResult: { title: "", message: "" }, // To store result message for all players
-  turnNumber: 0, // Nieuw: telt het totaal aantal beurten
 };
 
 // Role codes
@@ -470,6 +469,14 @@ async function startGame() {
     return;
   }
 
+  // Check if questions are loaded
+  if (!gameState.questions || gameState.questions.length === 0) {
+    alert("Geen vragen geladen. Kan het spel niet starten.");
+    console.error("Attempted to start game with no questions loaded.");
+    // Optionally, try to reload or guide user. For now, just prevent start.
+    return;
+  }
+
   // Show loading indicator
   document.getElementById("startGameBtn").disabled = true;
   document.getElementById("startGameBtn").textContent = "Starting...";
@@ -624,8 +631,13 @@ function updateGameDisplay() {
   // Show answer if player is Fakemaker and not unmasked
   if (gameState.playerRole === "Fakemaker" && !gameState.fakemakerUnmasked) {
     document.getElementById("answerInfo").classList.remove("hidden");
-    const currentQuestion = gameState.questions[gameState.turnNumber];
-    document.getElementById("correctAnswer").textContent = currentQuestion.answer ? "Echt" : "Fake";
+    // Ensure currentQuestionIndex is valid before accessing questions array
+    if (gameState.currentQuestionIndex < gameState.questions.length) {
+        const currentQuestion = gameState.questions[gameState.currentQuestionIndex];
+        document.getElementById("correctAnswer").textContent = currentQuestion.answer ? "Echt" : "Fake";
+    } else {
+        document.getElementById("correctAnswer").textContent = "N/A"; // All questions used
+    }
   } else {
     document.getElementById("answerInfo").classList.add("hidden");
   }
@@ -692,7 +704,11 @@ function renderQuestionContentAndButtonStates() {
 
 // Submit answer
 async function submitAnswer(answer) {
-  const currentQuestion = gameState.questions[gameState.turnNumber];
+  if (gameState.currentQuestionIndex >= gameState.questions.length) {
+    console.error("SubmitAnswer called but no more questions available.");
+    return; // Should ideally be handled by endGame condition
+  }
+  const currentQuestion = gameState.questions[gameState.currentQuestionIndex];
   const isCorrect = answer === currentQuestion.answer;
 
   let resultMessage = "";
@@ -718,6 +734,12 @@ async function submitAnswer(answer) {
   // Display result
   document.getElementById("resultMessage").textContent = resultMessage;
 
+  // Increment the global question counter *after* this question has been processed
+  // This ensures the next call to showQuestion/renderQuestion will use the next index.
+  if (gameState.currentQuestionIndex < gameState.questions.length) {
+      gameState.currentQuestionIndex++;
+  }
+
   // Zet het resultaat in de globale state zodat het bij alle spelers zichtbaar is
   gameState.lastResult = { title: isCorrect ? "Correct!" : "Wrong!", message: resultMessage };
   gameState.activeScreen = "resultScreen";
@@ -731,15 +753,14 @@ async function submitAnswer(answer) {
 
 // Next turn
 async function nextTurn() {
-  // Alleen de host verhoogt de vraagindex!
-  if (gameState.players[gameState.currentPlayerIndex]?.isHost) {
-    gameState.currentQuestionIndex++;
-  }
+  // gameState.currentQuestionIndex is now incremented in submitAnswer
+  // after a question is used.
 
   // Volgende speler
   gameState.currentPlayerIndex = (gameState.currentPlayerIndex + 1) % gameState.players.length;
 
   // Stop het spel als alle vragen geweest zijn
+  // currentQuestionIndex now reflects the index of the *next* question to be asked (or questions.length if all used)
   if (gameState.currentQuestionIndex >= gameState.questions.length) {
     await endGame();
     return;
@@ -750,6 +771,7 @@ async function nextTurn() {
   try {
     await saveGameToFirebase();
   } catch (error) {
+    console.error("Error updating turn. Please try again.", error);
     alert("Error updating turn. Please try again.");
   }
 }
