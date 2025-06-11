@@ -135,11 +135,6 @@ document.addEventListener("DOMContentLoaded", async () => {
     .getElementById("shareGameBtn")
     .addEventListener("click", shareGame);
 
-  // Add event listener for the AR camera toggle button
-  document
-    .getElementById("arCameraToggleBtn")
-    .addEventListener("click", toggleARCamera);
-
   // Check for game code in URL
   checkForGameCodeInURL();
 
@@ -918,6 +913,3 @@ function initializeARContainer() {
         console.log("AR Marker not found in container.");
     }
 }
-
-
-
