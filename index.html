@@ -13,6 +13,7 @@
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 </head>
 <body>
+    <button id="escapeBtn" class="escape-btn">Ontsnapt</button>
     <div class="container">
         <!-- Start Screen -->
         <div id="startScreen" class="screen active">
@@ -154,8 +155,6 @@
         <div id="resultScreen" class="screen">
             <h1 id="resultTitle">Resultaat</h1>
             <p id="resultMessage"></p>
-            <p>Jouw stappen: <span id="stepsDisplayResult" class="highlight">0</span></p>
-            <p id="stepChange" class="highlight"></p>
             <button id="nextTurnBtn" class="primary-button">Volgende Beurt</button>
             <button id="escapeBtn" class="secondary-button white-button">Ontsnapt</button>
             <button id="newGameBtn" class="secondary-button">Nieuw Spel</button>
@@ -169,7 +168,6 @@
         <!-- Global AR Button - Initially hidden -->
         <button id="globalScanHiroBtn" class="global-ar-button hidden">scan Hiro</button>
     </div>
-
     <script src="complete_fixed_script.js"></script>
 </body>
 </html>

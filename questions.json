@@ -7,61 +7,6 @@
     "imagePath": "Images/1_Fake.png"
   },
   {
-    "id": 2,
-    "type": "multiple_choice",
-    "content": "Wat is een kenmerk van fake news?",
-    "options": [
-      "Het bevat vaak sensationele of overdreven koppen",
-      "Het wordt altijd gecontroleerd door betrouwbare bronnen",
-      "Het is altijd geschreven door professionele journalisten",
-      "Het bevat nooit afbeeldingen of video's"
-    ],
-    "correctOption": 0
-  },
-  {
-    "id": 3,
-    "type": "multiple_choice",
-    "content": "Hoe kan je controleren of een nieuwsbericht bertrouwbaar is?",
-    "options": [
-      "Door alleen naar de titel te kijken",
-      "Door de bron en auteur te controleren",
-      "Door het meteen te delen op sociale media",
-      "Door te kijken hoeveel likes heeft"
-    ],
-    "correctOption": 1
-  },
-  {
-    "id": 4,
-    "type": "multiple_choice",
-    "content": "Wat kan je doen als je twijfelt of een nieuwsbericht waar is?",
-    "options": [
-      "Het meteen delen met vrienden",
-      "Het negeren en verdergaan",
-      "Andere betrouwbare bronnen raadplegen",
-      "Het als waarheid aannemen"
-    ],
-    "correctOption": 2
-  },
-  {
-    "id": 5,
-    "type": "multiple_choice",
-    "content": "Wat is een voorbeeld van een betrouwbare bron?",
-    "options": [
-      "Een onbekende website zonder contactinformatie",
-      "Een gerenommeerde krant zoals De Standaard of NRC",
-      "Een blog zonder duidelijke auteur",
-      "Een sociale media-post zonder brondvermelding"
-    ],
-    "correctOption": 1
-  },
-  {
-    "id": 7,
-    "type": "video",
-    "content": "Is deze YouTube video echt of nep?",
-    "answer": false,
-    "videoUrl": "https://www.youtube.com/watch?v=bXKkZh2UEEA"
-  },
-  {
     "id": 18,
     "type": "image",
     "content": "Is dit artikel over deze kindjes echt of nep?",
@@ -285,67 +230,7 @@
     "answer": false,
     "imagePath": "Images/50_F.png"
   },
-    {
-    "id": 51,
-    "type": "multiple_choice",
-    "content": "Waarom wordt fake news vaak verspreid?",
-    "options": [
-      "Om mensen te informeren over belangrijke gebeurtenissen ",
-      "Om geld te verdienen of mensen te manipuleren",
-      "Omdat het altijd grappig is",
-      "Omdat het door de overheid wordt verplicht"
-    ],
-    "correctOption": 1
-  },
   {
-    "id": 52,
-    "type": "multiple_choice",
-    "content": "Welke van de volgende bronnen is het meest betrouwbaar vvor nieuws?",
-    "options": [
-      "Een onbekende blog zonde contactinformatie",
-      "Een officiële nieuwswebsite met duidelijke bronvermelding",
-      "Een bericht dat vaak gedeeld wordt op sociale media",
-      "Een video zonder context op youtube"
-    ],
-    "correctOption": 1
-  },
-  {
-    "id": 53,
-    "type": "multiple_choice",
-    "content": "Wat kan je doen om te voorkomen dat je Fake news verspreidt?",
-    "options": [
-      "Altijd alles delen wat je leest",
-      "Alleen bericten delen die populair zijn op sociale media",
-      "De bron en inhoud van het bericht controleren voordat je het deelt",
-      "Berichten delen die je vrienden interresant vinden"
-    ],
-    "correctOption": 2
-  },
-   {
-    "id": 54,
-    "type": "multiple_choice",
-    "content": "Wat is een veelvoorkomend doel van fake news?",
-    "options": [
-      "Mensen informeren over de waarheid",
-      "Mensen misleiden of manipuleren",
-      "Het verbeteren van de journalistiek",
-      "Het verspreiden van humor"
-    ],
-    "correctOption": 1
-  },
-  {
-    "id": 55,
-    "type": "multiple_choice",
-    "content": "Wat betekent het als een nieuwsbericht clickbait is?",
-    "options": [
-      "Het bedoeld is om mensen te informeren",
-      "Het is altijd volledig waar",
-      "Het wordt alleen gedeeld door officiële nieuwsorganisaties",
-      "Het gebruikt een misleidende titel om mensen te laten klikken"
-    ],
-    "correctOption": 3
-  },
-   {
     "id": 56,
     "type": "image",
     "content": "Is deze sociale media post over Suzan en Freek echt of nep?",

@@ -547,3 +547,59 @@ button:disabled {
     }
 }
 
+/* Escape Button Styles */
+.escape-btn {
+    position: fixed;
+    top: 18px;
+    left: 18px;
+    z-index: 1000;
+    background: #fff;
+    color: #333;
+    border: 2px solid #ccc;
+    border-radius: 22px;
+    padding: 8px 18px;
+    font-size: 1rem;
+    font-weight: 600;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    opacity: 0.95;
+    transition: background 0.2s;
+}
+
+.escape-btn:active {
+    background: #eee;
+}
+
+@media (max-width: 600px) {
+    .escape-btn {
+        font-size: 0.95rem;
+        padding: 7px 14px;
+        top: 10px;
+        left: 10px;
+    }
+}
+
+#resultScreen #escapeBtn {
+    position: absolute;
+    top: 16px;
+    left: 16px;
+    z-index: 10;
+    background: #fff;
+    color: #333;
+    border: 2px solid #ccc;
+    border-radius: 22px;
+    padding: 8px 18px;
+    font-size: 1rem;
+    font-weight: 600;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    opacity: 0.95;
+}
+
+@media (max-width: 600px) {
+    #resultScreen #escapeBtn {
+        font-size: 0.95rem;
+        padding: 7px 14px;
+        top: 10px;
+        left: 10px;
+    }
+}
+

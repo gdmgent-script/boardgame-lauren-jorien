@@ -1128,29 +1128,35 @@ function initializeARContainer() {
 }
 
 // Escape player function
-document.getElementById("escapeBtn").addEventListener("click", escapePlayer);
+document.getElementById("escapeBtn").addEventListener("click", async function() {
+    // Verwijder speler uit de spelerslijst
+    const name = gameState.playerName;
+    const idx = gameState.players.findIndex(p => p.name === name);
 
-async function escapePlayer() {
-  const playerName = gameState.playerName;
+    if (idx !== -1) {
+        gameState.players.splice(idx, 1);
+        delete gameState.playerSteps[name];
 
-  // Remove player from players array
-  gameState.players = gameState.players.filter(p => p.name !== playerName);
+        // Corrigeer currentPlayerIndex als nodig
+        if (gameState.currentPlayerIndex >= gameState.players.length) {
+            gameState.currentPlayerIndex = 0;
+        }
+        // Als de ontsnapte speler aan de beurt was, volgende speler aan de beurt
+        if (idx === gameState.currentPlayerIndex) {
+            gameState.currentPlayerIndex = gameState.currentPlayerIndex % gameState.players.length;
+        } else if (idx < gameState.currentPlayerIndex) {
+            gameState.currentPlayerIndex--;
+        }
 
-  // Remove from playerSteps
-  delete gameState.playerSteps[playerName];
+        // Sla op in Firebase
+        await saveGameToFirebase();
+    }
 
-  // If currentPlayerIndex is out of bounds, reset to 0
-  if (gameState.currentPlayerIndex >= gameState.players.length) {
-    gameState.currentPlayerIndex = 0;
-  }
+    // Als er nog maar 1 speler over is: einde spel
+    if (gameState.players.length <= 1) {
+        await endGame();
+    }
 
-  // If only one player left, end the game
-  if (gameState.players.length === 1) {
-    await endGame();
-    return;
-  }
-
-  // Otherwise, continue to next turn
-  gameState.activeScreen = "gameScreen";
-  await saveGameToFirebase();
-}
+    // Stuur ontsnapte speler terug naar start
+    showScreen("startScreen");
+});
