@@ -439,62 +439,17 @@ function showQuestion() {
   let questionTitle = `Vraag ${gameState.currentQuestionIndex + 1}`;
   document.getElementById("questionNumber").textContent = questionTitle;
   document.getElementById("questionContent").textContent = question.content;
-
   // Determine if it's this player's turn
   const currentPlayer = gameState.players[gameState.currentPlayerIndex];
   const isMyTurn = currentPlayer && currentPlayer.name === gameState.playerName;
 
-  // Handle different question types
-  if (question.type === "multiple_choice") {
-    document.getElementById("trueFalseButtons").classList.add("hidden");
-    document.getElementById("multipleChoiceButtons").classList.remove("hidden");
-    question.options.forEach((option, index) => {
-      const button = document.getElementById(`option${index}`);
-      if (button) {
-        button.textContent = option;
-        button.style.display = isMyTurn ? "block" : "none"; // Hide if not my turn
-        button.disabled = !isMyTurn; // Still disable, but primarily hidden
-      }
-    });
-    for (let i = question.options.length; i < 4; i++) {
-      const button = document.getElementById(`option${i}`);
-      if (button) {
-        button.style.display = "none";
-      }
-    }
-  } else {
-    // For true/false questions
-    if (isMyTurn) {
-      document.getElementById("trueFalseButtons").classList.remove("hidden");
-      document.getElementById("trueBtn").disabled = false;
-      document.getElementById("falseBtn").disabled = false;
-    } else {
-      document.getElementById("trueFalseButtons").classList.add("hidden");
-    }
-    document.getElementById("multipleChoiceButtons").classList.add("hidden");
-  }
-
-  // Optionally indicate if it's not your turn
-  const yourTurnInfo = document.getElementById("yourTurnInfo");
-  if (yourTurnInfo) {
-    yourTurnInfo.style.display = isMyTurn ? "block" : "none";
-  }
-
-  // Handle media content
-  handleMediaContent(question);
-
-  showScreen("questionScreen");
-}
-
-// Handle media content (images, videos, PDFs)
-function handleMediaContent(question) {
-  // Hide all media containers first
+  // Handle media content (images, videos, PDFs)
   document.getElementById("imageContainer").classList.add("hidden");
   document.getElementById("videoContainer").classList.add("hidden");
   document.getElementById("externalActionContainer").classList.add("hidden");
 
   if (question.imagePath) {
-    if (question.imagePath.endsWith('.pdf')) {
+    if (question.imagePath.endsWith(".pdf")) {
       // Handle PDF files
       document.getElementById("externalActionContainer").classList.remove("hidden");
       document.getElementById("externalActionPrompt").innerHTML = 
@@ -510,7 +465,7 @@ function handleMediaContent(question) {
     const videoElement = document.getElementById("questionVideo");
     const sourceElement = document.getElementById("videoSource");
     
-    if (question.videoUrl.includes('youtube.com') || question.videoUrl.includes('youtu.be')) {
+    if (question.videoUrl.includes("youtube.com") || question.videoUrl.includes("youtu.be")) {
       // For YouTube videos, show link instead of embed
       document.getElementById("videoContainer").classList.add("hidden");
       document.getElementById("externalActionContainer").classList.remove("hidden");
@@ -522,8 +477,35 @@ function handleMediaContent(question) {
       videoElement.load();
     }
   }
+
+  // Handle different question types
+  if (question.type === "multiple_choice") {
+    document.getElementById("trueFalseButtons").classList.add("hidden");
+    document.getElementById("multipleChoiceButtons").classList.remove("hidden");
+    question.options.forEach((option, index) => {
+      const button = document.getElementById(`option${index}`);
+      if (button) {
+        button.textContent = option;
+        button.style.display = isMyTurn ? "block" : "none"; // Only show buttons for current player
+      }
+    });
+  } else if (question.type === "true_false") {
+    document.getElementById("multipleChoiceButtons").classList.add("hidden");
+    document.getElementById("trueFalseButtons").classList.remove("hidden");
+    document.getElementById("trueBtn").style.display = isMyTurn ? "block" : "none";
+    document.getElementById("falseBtn").style.display = isMyTurn ? "block" : "none";
+  }
+
+  // Optionally indicate if it's not your turn
+  const yourTurnInfo = document.getElementById("yourTurnInfo");
+  if (yourTurnInfo) {
+    yourTurnInfo.style.display = isMyTurn ? "block" : "none";
+  }
+
+  showScreen("questionScreen");
 }
 
+// Submit answer for true/false questions
 // Submit true/false answer
 async function submitAnswer(answer) {
   const question = gameState.questions[gameState.currentQuestionIndex];
@@ -550,30 +532,38 @@ async function processAnswer(isCorrect, playerAnswer) {
       if (gameState.playerSteps[gameState.playerName] === undefined) {
         gameState.playerSteps[gameState.playerName] = 0;
       }
+      let stepsChange = 0;
       if (isCorrect) {
-        currentPlayer.steps += 1;
-        gameState.playerSteps[gameState.playerName] = currentPlayer.steps;
+        // Player does not move if correct
+        stepsChange = 0;
+      } else {
+        // Player goes back 1-5 steps if incorrect
+        const stepsBack = Math.floor(Math.random() * 5) + 1;
+        stepsChange = -stepsBack;
+        currentPlayer.steps -= stepsBack;
+        if (currentPlayer.steps < 0) {
+          currentPlayer.steps = 0; // Ensure steps don't go below 0
+        }
       }
+      gameState.playerSteps[gameState.playerName] = currentPlayer.steps;
     }
 
     // Show result
     const resultTitle = isCorrect ? "Correct!" : "Fout!";
-    const resultMessage = isCorrect ?
-      "Je hebt het juiste antwoord gegeven!" :
-      "Helaas, dat was niet het juiste antwoord.";
+    const resultMessage = isCorrect ? "Je hebt het juiste antwoord gegeven!" : "Helaas, dat was niet het juiste antwoord.";
 
     gameState.lastResult = { // Store result in gameState for all players
         title: resultTitle,
         message: resultMessage,
         answeredPlayerName: gameState.playerName, // Store who answered
         wasCorrect: isCorrect, // Store if it was correct
-        stepsAwarded: isCorrect ? 1 : 0
+        stepsAwarded: stepsChange // Store the actual change in steps
     };
 
     document.getElementById("resultTitle").textContent = resultTitle;
     document.getElementById("resultMessage").textContent = resultMessage;
     document.getElementById("stepsDisplayResult").textContent = gameState.playerSteps[gameState.playerName] || 0;
-    const stepChange = isCorrect ? "+1 stap" : "Geen stappen";
+    const stepChange = stepsChange === 0 ? "Geen stappen verandering" : (stepsChange > 0 ? `+${stepsChange} stappen` : `${stepsChange} stappen`);
     document.getElementById("stepChange").textContent = stepChange;
 
     gameState.activeScreen = "resultScreen";
@@ -588,6 +578,13 @@ async function processAnswer(isCorrect, playerAnswer) {
 
 // Move to next turn
 async function nextTurn() {
+  // Only allow the current player to advance the game
+  const currentPlayer = gameState.players[gameState.currentPlayerIndex];
+  if (!currentPlayer || currentPlayer.name !== gameState.playerName) {
+    alert("Alleen de huidige speler kan naar de volgende beurt gaan.");
+    return;
+  }
+
   try {
     gameState.currentPlayerIndex = (gameState.currentPlayerIndex + 1) % gameState.players.length;
     gameState.currentQuestionIndex += 1;
@@ -717,15 +714,18 @@ function updateGameDisplay() {
   // Show/hide turn info based on current player
   const yourTurnInfo = document.getElementById("yourTurnInfo");
   const notYourTurnInfo = document.getElementById("notYourTurnInfo");
+  const nextTurnBtn = document.getElementById("nextTurnBtn");
   
   if (currentPlayer && currentPlayer.name === gameState.playerName) {
     // It's this player's turn
     if (yourTurnInfo) yourTurnInfo.style.display = "block";
     if (notYourTurnInfo) notYourTurnInfo.style.display = "none";
+    if (nextTurnBtn) nextTurnBtn.style.display = "block";
   } else {
     // It's not this player's turn
     if (yourTurnInfo) yourTurnInfo.style.display = "none";
     if (notYourTurnInfo) notYourTurnInfo.style.display = "block";
+    if (nextTurnBtn) nextTurnBtn.style.display = "none";
   }
 }
 
@@ -905,8 +905,8 @@ async function showQuestion() {
   handleMediaContent(question);
 
   const previousScreenForSave = gameState.activeScreen;
-  gameState.activeScreen = "questionScreen"; // Ensure internal state is set
-  showScreen("questionScreen"); // Show the screen
+  gameState.activeScreen = "questionScreen"; // Ensure internal state is  }
+}/ Show the screen
 
   // If this call is by the current player to reveal the question (transitioning from another screen)
   // then save this state change to Firebase.
@@ -920,4 +920,3 @@ async function showQuestion() {
       alert("Kon de vraag niet aan andere spelers tonen. Probeer opnieuw.");
     }
   }
-}
