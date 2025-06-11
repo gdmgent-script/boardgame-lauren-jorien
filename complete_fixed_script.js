@@ -1126,3 +1126,31 @@ function initializeARContainer() {
         console.log("AR Marker not found in container.");
     }
 }
+
+// Escape player function
+document.getElementById("escapeBtn").addEventListener("click", escapePlayer);
+
+async function escapePlayer() {
+  const playerName = gameState.playerName;
+
+  // Remove player from players array
+  gameState.players = gameState.players.filter(p => p.name !== playerName);
+
+  // Remove from playerSteps
+  delete gameState.playerSteps[playerName];
+
+  // If currentPlayerIndex is out of bounds, reset to 0
+  if (gameState.currentPlayerIndex >= gameState.players.length) {
+    gameState.currentPlayerIndex = 0;
+  }
+
+  // If only one player left, end the game
+  if (gameState.players.length === 1) {
+    await endGame();
+    return;
+  }
+
+  // Otherwise, continue to next turn
+  gameState.activeScreen = "gameScreen";
+  await saveGameToFirebase();
+}

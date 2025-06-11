@@ -117,6 +117,12 @@ button:disabled {
     background-color: #e9ecef;
 }
 
+.white-button {
+  background: #fff;
+  color: #222;
+  border: 2px solid #ccc;
+}
+
 /* Form Styles */
 .form-group {
     display: flex;
