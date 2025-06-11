@@ -135,6 +135,14 @@ document.addEventListener("DOMContentLoaded", async () => {
     .getElementById("shareGameBtn")
     .addEventListener("click", shareGame);
 
+  // Add event listener for the AR button
+  document
+    .getElementById("goToARBtn")
+    .addEventListener("click", () => {
+      showScreen("arScreen");
+      initializeAR(); // Initialize AR when switching to the AR screen
+    });
+
   // Check for game code in URL
   checkForGameCodeInURL();
 
@@ -160,26 +168,11 @@ function generateGameCode() {
   return code;
 }
 
-// Sanitize player names to be valid Firebase keys
-function sanitizeFirebaseKey(key) {
-  if (!key) return "";
-  // Replace forbidden characters with an underscore
-  let sanitizedKey = key.replace(/[.#$[\]]/g, "_");
-  // Ensure the key is not empty after sanitization (e.g. if name was just ".")
-  if (!sanitizedKey.trim()) return ""; 
-  return sanitizedKey;
-}
-
 // Create a new game as host
 async function createGame() {
-  let hostName = document.getElementById("hostNameInput").value.trim();
+  const hostName = document.getElementById("hostNameInput").value.trim();
   if (!hostName) {
     alert("Voer je naam in");
-    return;
-  }
-  hostName = sanitizeFirebaseKey(hostName);
-  if (!hostName) {
-    alert("De ingevoerde naam is ongeldig na het verwijderen van speciale tekens (zoals ., #, $, [, ]). Kies een andere naam.");
     return;
   }
 
@@ -226,20 +219,13 @@ async function createGame() {
 
 // Join an existing game
 async function joinGame() {
-  let playerName = document.getElementById("playerNameInput").value.trim();
+  const playerName = document.getElementById("playerNameInput").value.trim();
   const gameCode = document
     .getElementById("gameCodeInput")
     .value.trim()
     .toUpperCase();
 
   if (!playerName || !gameCode) {
-    showError("joinErrorMessage", "Voer je naam en spelcode in");
-    return;
-  }
-
-  playerName = sanitizeFirebaseKey(playerName);
-  if (!playerName) {
-    // The showError function handles hiding the message after a timeout.
     showError("joinErrorMessage", "Voer je naam en spelcode in");
     return;
   }
@@ -488,6 +474,12 @@ function updateGameDisplay() {
   // Update current player display
   document.getElementById("currentPlayerDisplay").textContent = currentPlayer.name;
 
+  // Update steps display
+  const steps = gameState.playerSteps[gameState.playerName] || 0;
+  document.getElementById("stepsDisplay").textContent = steps;
+
+  // Hide role name for everyone
+  document.getElementById("roleName").textContent = "Hidden";
 
   // Show answer if player is Fakemaker and not unmasked
   if (gameState.playerRole === "Fakemaker" && !gameState.fakemakerUnmasked) {
@@ -896,36 +888,31 @@ function changeArModel() {
   }
 }
 
-// Function to toggle AR camera container
-function toggleARCamera() {
-    const arContainer = document.getElementById("arContainer");
-    const arToggleBtn = document.getElementById("arCameraToggleBtn");
-    
-    if (arContainer.classList.contains("hidden")) {
-        // Show AR container
-        arContainer.classList.remove("hidden");
-        arToggleBtn.textContent = "✕";
-        arToggleBtn.style.backgroundColor = "#f44336";
-        
-        // Initialize AR when showing for the first time
-        initializeARContainer();
-    } else {
-        // Hide AR container
-        arContainer.classList.add("hidden");
-        arToggleBtn.textContent = "📷";
-        arToggleBtn.style.backgroundColor = "#4CAF50";
-    }
-}
-
-// Function to initialize AR in the small container
-function initializeARContainer() {
-    const marker = document.querySelector("#arContainer a-marker");
+// Function to initialize AR when the AR screen is shown
+function initializeAR() {
+    const marker = document.querySelector("a-marker");
     if (marker) {
         marker.addEventListener("markerFound", () => {
-            console.log("Marker found in AR container, changing AR model.");
+            console.log("Marker found, changing AR model.");
             changeArModel();
         });
     } else {
-        console.log("AR Marker not found in container.");
+        console.log("AR Marker not found on this screen.");
     }
 }
+
+// Modify the DOMContentLoaded event listener to include AR button
+document.addEventListener("DOMContentLoaded", async () => {
+    // ... (existing game initialization code) ...
+
+    // Add event listener for the AR button
+    const goToARBtn = document.getElementById("goToARBtn");
+    if (goToARBtn) {
+        goToARBtn.addEventListener("click", () => {
+            showScreen("arScreen");
+            initializeAR(); // Initialize AR when switching to the AR screen
+        });
+    }
+});
+
+
