@@ -103,7 +103,6 @@ const gameState = {
   fakemakerUnmasked: false,
   playerName: "",
   playerRole: "",
-  playerSteps: {},
   activeScreen: "startScreen", // To control which screen is globally active
   lastResult: { title: "", message: "" }, // To store result message for all players
 };
@@ -288,12 +287,8 @@ async function createGame() {
       name: hostName,
       role: "",
       isHost: true,
-      steps: 0,
     },
   ];
-
-  // Initialize player steps
-  gameState.playerSteps[hostName] = 0;
 
   try {
     gameState.activeScreen = "roleCodeScreen"; // Host proceeds to role code screen
@@ -381,7 +376,6 @@ async function joinGame() {
     gameState.currentQuestionIndex = gameData.currentQuestionIndex || 0;
     gameState.fakemakerName = gameData.fakemakerName || "";
     gameState.fakemakerUnmasked = gameData.fakemakerUnmasked || false;
-    gameState.playerSteps = gameData.playerSteps || {};
     gameState.questions = gameData.questions || [];
     gameState.gameStarted = gameData.gameStarted || false;
 
@@ -390,13 +384,9 @@ async function joinGame() {
       name: playerName,
       role: "",
       isHost: false,
-      steps: 0,
     };
 
     gameState.players.push(newPlayer);
-
-    // Initialize player steps
-    gameState.playerSteps[playerName] = 0;
 
     // Determine the activeScreen that should be persisted in Firebase.
     // This should be the screen the game was on before this player joined (e.g., hostGameScreen).
@@ -703,50 +693,22 @@ async function submitAnswer(answer) {
   const isCorrect = answer === currentQuestion.answer;
 
   let resultMessage = "";
-  let stepChange = 0;
 
   if (isCorrect) {
     document.getElementById("resultTitle").textContent = "Correct!";
-    stepChange = 0; // Geen stap vooruit!
-    resultMessage = `${gameState.playerName} blijft op dezelfde plek.`;
+    resultMessage = `${gameState.playerName} heeft het goed!`;
   } else {
     document.getElementById("resultTitle").textContent = "Wrong!";
-    stepChange = -Math.floor(Math.random() * 5) - 1; // -1 tot -5 stappen achteruit
-    resultMessage = `${gameState.playerName} gaat ${Math.abs(stepChange)} stap(pen) achteruit.`;
-  }
-
-  // Update player steps
-  gameState.playerSteps[gameState.playerName] = (
-    gameState.playerSteps[gameState.playerName] || 0
-  ) + stepChange;
-  if (gameState.playerSteps[gameState.playerName] < 0) {
-    gameState.playerSteps[gameState.playerName] = 0;
+    resultMessage = `${gameState.playerName} heeft het fout!`;
   }
 
   // Update player in players array
   const playerIndex = gameState.players.findIndex(
     (p) => p.name === gameState.playerName
   );
-  if (playerIndex !== -1) {
-    gameState.players[playerIndex].steps = gameState.playerSteps[gameState.playerName];
-  }
 
   // Display result
   document.getElementById("resultMessage").textContent = resultMessage;
-  document.getElementById("stepsDisplayResult").textContent = gameState.playerSteps[gameState.playerName];
-  
-  gameState.lastResult = { title: isCorrect ? "Correct!" : "Wrong!", message: resultMessage };
-  gameState.activeScreen = "resultScreen";
-
-  // Save to Firebase
-  try {
-    console.log("Attempting to save answer to Firebase:", gameState.gameCode);
-    await saveGameToFirebase();
-    // Firebase listener will show the result screen for all players
-  } catch (error) {
-    console.error("Error saving answer:", error);
-    alert("Error saving your answer. Please try again.");
-  }
 }
 
 // Next turn
@@ -780,33 +742,15 @@ async function endGame() {
   // (e.g., Fakemaker unmasked, or a player reaches a target score).
   // For "Keep the game going", this function is called less, as questions loop.
 
-  // Find winner (player with most steps)
-  let maxSteps = -1;
-  let winners = [];
-
-  Object.entries(gameState.playerSteps).forEach(([name, steps]) => {
-    if (steps > maxSteps) {
-      maxSteps = steps;
-      winners = [name];
-    } else if (steps === maxSteps) {
-      winners.push(name);
-    }
-  });
-
   let resultTitle = "Game Over!";
   let resultMessageText = "";
   
-  if (winners.length === 1) {
-    resultMessageText = `${winners[0]} wins with ${maxSteps} steps!`;
-  } else if (winners.length > 1) {
-    resultMessageText = `It's a tie between ${winners.join(" and ")} with ${maxSteps} steps!`;
-    // Per "game does not end when there's a tie", if we reach here due to a tie,
-    // we might want to *not* end, but continue.
-    // However, if endGame() is called due to an explicit win condition check that results in a tie,
-    // it's a design decision whether that specific tie ends the game or forces continuation.
-    // For now, if endGame() is called, it concludes. Looping questions prevents ending *just* due to ties from running out of questions.
+  if (gameState.players.length === 1) {
+    // Only one player left, they are the winner by default
+    const winner = gameState.players[0];
+    resultMessageText = `${winner.name} is de laatste speler over en wint het spel!`;
   } else {
-    resultMessageText = "No winner could be determined.";
+    resultMessageText = "Het spel is geëindigd.";
   }
 
   gameState.lastResult = { title: resultTitle, message: resultMessageText };
@@ -838,8 +782,6 @@ function resetGame() {
   gameState.fakemakerUnmasked = false;
   gameState.playerName = "";
   gameState.playerRole = "";
-  gameState.playerSteps = {};
-  gameState.gameStarted = false;
   gameState.activeScreen = "startScreen";
   gameState.lastResult = { title: "", message: "" };
   gameState.gameEnded = false;
@@ -861,7 +803,6 @@ async function saveGameToFirebase() {
     currentQuestionIndex: gameState.currentQuestionIndex || 0,
     fakemakerName: gameState.fakemakerName || "",
     fakemakerUnmasked: gameState.fakemakerUnmasked === true,
-    playerSteps: gameState.playerSteps || {},
     questions: gameState.questions || [],
     gameStarted: gameState.gameStarted === true,
     activeScreen: gameState.activeScreen || "gameScreen",
@@ -917,7 +858,6 @@ function startListeningForUpdates() {
     gameState.currentQuestionIndex = data.currentQuestionIndex !== undefined ? data.currentQuestionIndex : gameState.currentQuestionIndex;
     gameState.fakemakerName = data.fakemakerName || gameState.fakemakerName;
     gameState.fakemakerUnmasked = data.fakemakerUnmasked !== undefined ? data.fakemakerUnmasked : gameState.fakemakerUnmasked;
-    gameState.playerSteps = data.playerSteps || gameState.playerSteps;
     gameState.questions = data.questions || gameState.questions;
     gameState.gameStarted = data.gameStarted !== undefined ? data.gameStarted : gameState.gameStarted;
     // IMPORTANT: Only update activeScreen from Firebase if the game has started or if it's not a joining player being pulled back
@@ -951,9 +891,6 @@ function startListeningForUpdates() {
         case "resultScreen":
           document.getElementById("resultTitle").textContent = gameState.lastResult.title || "Resultaat";
           document.getElementById("resultMessage").textContent = gameState.lastResult.message || "";
-          // Update steps display for the current player viewing the screen, or for the player who last answered.
-          // For simplicity, let's show the viewing player's steps.
-          document.getElementById("stepsDisplayResult").textContent = gameState.playerSteps[gameState.playerName] || 0;
           
           if (gameState.gameEnded) {
             document.getElementById("nextTurnBtn").style.display = "none";
@@ -1159,7 +1096,6 @@ document.getElementById("escapeBtn").addEventListener("click", async function() 
 
     if (idx !== -1) {
         gameState.players.splice(idx, 1);
-        delete gameState.playerSteps[name];
 
         // Corrigeer currentPlayerIndex als nodig
         if (gameState.currentPlayerIndex >= gameState.players.length) {

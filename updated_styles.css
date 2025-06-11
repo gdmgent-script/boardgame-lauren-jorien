@@ -564,6 +564,7 @@ button:disabled {
     opacity: 0.95;
     transition: background 0.2s;
     display: none;
+}
 
 .escape-btn:active {
     background: #eee;
@@ -606,19 +607,20 @@ button:disabled {
 /* Unmask Button Styles */
 .unmask-btn {
     position: fixed;
-    top: 18px;
-    right: 18px;
+    top: 12px;
+    right: 12px;
     z-index: 1000;
     background: #fff;
     color: #d32f2f;
-    border: 2px solid #d32f2f;
-    border-radius: 22px;
-    padding: 8px 18px;
-    font-size: 1rem;
-    font-weight: 600;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    border: 1.5px solid #d32f2f;
+    border-radius: 18px;
+    padding: 5px 13px;
+    font-size: 0.95rem;
+    font-weight: 500;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.07);
     opacity: 0.95;
     display: none;
+    transition: background 0.2s;
 }
 
 .unmask-btn:active {
@@ -627,9 +629,9 @@ button:disabled {
 
 @media (max-width: 600px) {
     .unmask-btn {
-        font-size: 0.95rem;
-        padding: 7px 14px;
-        top: 10px;
-        right: 10px;
+        font-size: 0.90rem;
+        padding: 4px 10px;
+        top: 6px;
+        right: 6px;
     }
 }
